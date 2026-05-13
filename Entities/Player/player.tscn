@@ -3,11 +3,9 @@
 [ext_resource type="Script" uid="uid://c8hhw37mt5ikl" path="res://Entities/Player/player_controller.gd" id="1_3uyv8"]
 [ext_resource type="Script" uid="uid://xjbpl4pgvuno" path="res://Components/movement_component.gd" id="2_lu8i8"]
 [ext_resource type="Script" uid="uid://dfdfedqttxrg5" path="res://Entities/Cameras/camera_manager.gd" id="3_4wf4l"]
-[ext_resource type="PackedScene" uid="uid://cfbefi6t6in3w" path="res://Art/Characters/Fennec/main_char.tscn" id="3_7a1se"]
 [ext_resource type="PackedScene" uid="uid://xwwr2lop101u" path="res://Entities/Cameras/Exploring/explore_cam_1.tscn" id="3_lu8i8"]
 [ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="4_01a4e"]
 [ext_resource type="Script" uid="uid://csjccrhj5wnx7" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_3d.gd" id="4_5c2io"]
-[ext_resource type="PackedScene" uid="uid://q05m7nb63dvv" path="res://Art/Characters/Fennecs/Fennecs.tscn" id="4_x1y6q"]
 [ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="5_4wf4l"]
 [ext_resource type="Script" uid="uid://co176ddgcqiek" path="res://Entities/Player/fps_counter.gd" id="10_x1y6q"]
 
@@ -47,10 +45,6 @@ gravity_scale = 10.0
 
 [node name="PhaseAdapter" type="Node3D" parent="." unique_id=1901511077]
 
-[node name="Visuals2" parent="." unique_id=844101052 instance=ExtResource("3_7a1se")]
-visible = false
-script = null
-
 [node name="Node3D" type="Node3D" parent="." unique_id=1899949607]
 
 [node name="Visuals" type="MeshInstance3D" parent="." unique_id=1499319924]
@@ -60,11 +54,6 @@ mesh = SubResource("CapsuleMesh_tekja")
 [node name="Collision" type="CollisionShape3D" parent="." unique_id=1222498110]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.49574387, 0)
 shape = SubResource("CapsuleShape3D_5c2io")
-
-[node name="Visuals3" parent="." unique_id=390274095 instance=ExtResource("4_x1y6q")]
-transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)
-visible = false
-script = null
 
 [node name="VoxelViewer" type="VoxelViewer" parent="." unique_id=220781735]
 view_distance = 1000

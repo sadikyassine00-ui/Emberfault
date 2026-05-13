@@ -3,7 +3,9 @@ class_name SpawnManager
 
 @export var horde_manager: HordeManager
 @export var player: Node3D
+@export var base_core: Node3D # NEW: Needed to spawn Saboteurs
 @export var spawn_radius: float = 35.0
+@export var saboteur_chance: float = 0.2 # NEW: 20% go for the base
 
 @onready var spawn_timer: Timer = $SpawnTimer
 
@@ -11,29 +13,34 @@ func _ready():
 	spawn_timer.timeout.connect(_on_spawn_timer_timeout)
 
 func _on_spawn_timer_timeout():
-	if not player or not horde_manager: return
+	if not player or not horde_manager or not base_core: return
 
-	# THE GHOST KILLER: Check the HordeManager's limits before doing anything!
 	if horde_manager.alive_count >= horde_manager.max_concurrent_enemies:
-		return # Swarm is full, stop spawning
+		return
 
 	if horde_manager.total_enemies_in_wave != -1 and horde_manager.total_spawned_count >= horde_manager.total_enemies_in_wave:
-		return # The wave is completely finished, stop spawning
+		return
 
-	# Try to find a safe floor voxel
+	# Decide Intent: 20% Saboteur, 80% Harasser
+	var is_saboteur = randf() < saboteur_chance
+
+	# Determine Spawn Center based on Intent
+	var spawn_center = base_core.global_position if is_saboteur else player.global_position
+
 	for attempt in range(3):
-		var spawn_pos = _get_safe_spawn_pos()
+		# Pass the dynamic center to the raycast function
+		var spawn_pos = _get_safe_spawn_pos(spawn_center)
 
 		if spawn_pos != Vector3.INF:
-			horde_manager.spawn_enemy(spawn_pos)
+			horde_manager.spawn_enemy(spawn_pos, is_saboteur)
 			return
 
-func _get_safe_spawn_pos() -> Vector3:
+func _get_safe_spawn_pos(center_pos: Vector3) -> Vector3:
 	var angle = randf() * TAU
 	var offset = Vector3(cos(angle), 0, sin(angle)) * spawn_radius
 
-	var target_x = player.global_position.x + offset.x
-	var target_z = player.global_position.z + offset.z
+	var target_x = center_pos.x + offset.x
+	var target_z = center_pos.z + offset.z
 
 	var ray_start = Vector3(target_x, 1000.0, target_z)
 	var ray_end = Vector3(target_x, -1000.0, target_z)
