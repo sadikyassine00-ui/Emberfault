@@ -1,0 +1,141 @@
+[gd_scene format=3 uid="uid://8owkf4gyoy0v"]
+
+[ext_resource type="Script" uid="uid://c8hhw37mt5ikl" path="res://Entities/Player/player_controller.gd" id="1_3uyv8"]
+[ext_resource type="Script" uid="uid://xjbpl4pgvuno" path="res://Components/movement_component.gd" id="2_lu8i8"]
+[ext_resource type="Script" uid="uid://dfdfedqttxrg5" path="res://Entities/Cameras/camera_manager.gd" id="3_4wf4l"]
+[ext_resource type="PackedScene" uid="uid://cfbefi6t6in3w" path="res://Art/Characters/Fennec/main_char.tscn" id="3_7a1se"]
+[ext_resource type="PackedScene" uid="uid://xwwr2lop101u" path="res://Entities/Cameras/Exploring/explore_cam_1.tscn" id="3_lu8i8"]
+[ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="4_01a4e"]
+[ext_resource type="Script" uid="uid://csjccrhj5wnx7" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_3d.gd" id="4_5c2io"]
+[ext_resource type="PackedScene" uid="uid://q05m7nb63dvv" path="res://Art/Characters/Fennecs/Fennecs.tscn" id="4_x1y6q"]
+[ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="5_4wf4l"]
+[ext_resource type="Script" uid="uid://co176ddgcqiek" path="res://Entities/Player/fps_counter.gd" id="10_x1y6q"]
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_01a4e"]
+albedo_color = Color(0.6784314, 1, 0.34117648, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_tekja"]
+material = SubResource("ORMMaterial3D_01a4e")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_5c2io"]
+radius = 0.18115234
+height = 1.0151978
+
+[sub_resource type="Resource" id="Resource_7a1se"]
+script = ExtResource("5_4wf4l")
+duration = 0.2
+
+[sub_resource type="Resource" id="Resource_01a4e"]
+script = ExtResource("5_4wf4l")
+duration = 0.2
+
+[node name="PlayerBody" type="CharacterBody3D" unique_id=1816063018]
+collision_layer = 2
+script = ExtResource("1_3uyv8")
+
+[node name="CameraPivot" type="Marker3D" parent="." unique_id=177559421]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3175118, 0)
+
+[node name="MovementComponent" type="Node3D" parent="." unique_id=2136704142 node_paths=PackedStringArray("visuals")]
+script = ExtResource("2_lu8i8")
+visuals = NodePath("../Visuals")
+max_speed = 10.0
+acceleration = 100.0
+friction = 1000.0
+jump_force = 30.0
+gravity_scale = 10.0
+
+[node name="PhaseAdapter" type="Node3D" parent="." unique_id=1901511077]
+
+[node name="Visuals2" parent="." unique_id=844101052 instance=ExtResource("3_7a1se")]
+visible = false
+script = null
+
+[node name="Node3D" type="Node3D" parent="." unique_id=1899949607]
+
+[node name="Visuals" type="MeshInstance3D" parent="." unique_id=1499319924]
+transform = Transform3D(0.75, 0, 0, 0, 0.75, 0, 0, 0, 0.75, 0, 0.75, 0)
+mesh = SubResource("CapsuleMesh_tekja")
+
+[node name="Collision" type="CollisionShape3D" parent="." unique_id=1222498110]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.49574387, 0)
+shape = SubResource("CapsuleShape3D_5c2io")
+
+[node name="Visuals3" parent="." unique_id=390274095 instance=ExtResource("4_x1y6q")]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)
+visible = false
+script = null
+
+[node name="VoxelViewer" type="VoxelViewer" parent="." unique_id=220781735]
+view_distance = 1000
+requires_data_block_notifications = true
+
+[node name="CameraManager" type="Node3D" parent="." unique_id=2031014716 node_paths=PackedStringArray("cozy_pcam", "swarm_pcam", "main_cam")]
+script = ExtResource("3_4wf4l")
+cozy_pcam = NodePath("Explore/ExploreCam1")
+swarm_pcam = NodePath("Swarm/swarm_cam_1")
+main_cam = NodePath("Camera3D")
+
+[node name="Camera3D" type="Camera3D" parent="CameraManager" unique_id=981501342]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 0.9085081775267219, 0.4178670738010765, 0, -0.4178670738010765, 0.9085081775267219, 0, 3.906847169005383, 4.542540887633609)
+top_level = true
+visible = false
+fov = 60.0
+
+[node name="PhantomCameraHost" type="Node" parent="CameraManager/Camera3D" unique_id=355425127]
+process_priority = 300
+process_physics_priority = 300
+script = ExtResource("4_01a4e")
+metadata/_custom_type_script = "uid://bd046eokvcnu2"
+
+[node name="Explore" type="Node3D" parent="CameraManager" unique_id=1297930009]
+
+[node name="ExploreCam1" parent="CameraManager/Explore" unique_id=2052751808 node_paths=PackedStringArray("follow_target") instance=ExtResource("3_lu8i8")]
+transform = Transform3D(1, 0, 0, 0, 0.9085081775267219, 0.4178670738010765, 0, -0.4178670738010765, 0.9085081775267219, 0, 3.906847169005383, 4.542540887633609)
+priority = 20
+follow_target = NodePath("../../../CameraPivot")
+tween_resource = SubResource("Resource_7a1se")
+tween_on_load = false
+follow_damping = true
+follow_damping_value = Vector3(0.1, 0, 0.1)
+align_transform_with_view = Callable()
+align_position_with_view = Callable()
+align_rotation_with_view = Callable()
+
+[node name="Swarm" type="Node3D" parent="CameraManager" unique_id=515798333]
+
+[node name="swarm_cam_1" type="Node3D" parent="CameraManager/Swarm" unique_id=1517337212 node_paths=PackedStringArray("follow_target")]
+transform = Transform3D(0.7071067811865477, 0.4075991996587287, -0.5778086988247613, 2.7755576e-17, 0.8171448983351286, 0.5764323161697932, 0.7071067811865475, -0.4075991996587288, 0.5778086988247615, -26.001391447114262, 26.256966027640694, 26.001391447114266)
+script = ExtResource("4_5c2io")
+follow_mode = 6
+follow_target = NodePath("../../../CameraPivot")
+tween_resource = SubResource("Resource_01a4e")
+tween_on_load = false
+follow_damping = true
+follow_distance = 45.0
+vertical_rotation_offset = 0.6143558967020039
+horizontal_rotation_offset = 0.7853981633974483
+spring_length = 45.0
+collision_mask = 0
+align_transform_with_view = Callable()
+align_position_with_view = Callable()
+align_rotation_with_view = Callable()
+metadata/_custom_type_script = "uid://csjccrhj5wnx7"
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=196700197]
+
+[node name="FPSCounter" type="Label" parent="HUD" unique_id=316988315]
+anchors_preset = -1
+anchor_left = 0.958
+anchor_top = 0.049
+anchor_right = 0.958
+anchor_bottom = 0.049
+offset_left = -19.615999999999985
+offset_top = -11.752000000000002
+offset_right = 20.384000000000015
+offset_bottom = 11.247999999999998
+theme_override_colors/font_color = Color(0.33333334, 1, 0.34509805, 1)
+text = "FPS"
+horizontal_alignment = 2
+script = ExtResource("10_x1y6q")
