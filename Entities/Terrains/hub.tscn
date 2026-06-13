@@ -2,15 +2,17 @@
 
 [ext_resource type="PackedScene" uid="uid://8owkf4gyoy0v" path="res://Entities/Player/player.tscn" id="1_x3tnt"]
 [ext_resource type="PackedScene" uid="uid://bnle1pmef2w1k" path="res://Scenes/camera_transition_screen.tscn" id="2_qpe5p"]
-[ext_resource type="Image" uid="uid://bjtbn23j3b0lx" path="res://Art/Heightmaps/Mountain1000.png" id="3_5i0ie"]
 [ext_resource type="Script" uid="uid://bpi2u0n54s3sj" path="res://Systems/SpawnSystem/horde_manager.gd" id="4_50hlt"]
 [ext_resource type="Texture2D" uid="uid://dqd02gdir1axe" path="res://Art/Characters/Cuby/simple_cube.png" id="5_pjmii"]
+[ext_resource type="PackedScene" uid="uid://iys5k8v4l8dp" path="res://Entities/Enemies/active_enemy.tscn" id="5_qpe5p"]
 [ext_resource type="Script" uid="uid://jg4phcinrp0j" path="res://Systems/SpawnSystem/spawn_manager.gd" id="6_0uhcw"]
 [ext_resource type="Script" uid="uid://odr6i13sbqxt" path="res://Systems/Test/enemy_damage_test.gd" id="7_ybb3b"]
+[ext_resource type="Script" uid="uid://b4q87fdjg4xou" path="res://Systems/SpawnSystem/director.gd" id="9_5i0ie"]
+[ext_resource type="Script" uid="uid://4yo6d04wst8x" path="res://UI/debug_ui.gd" id="10_50hlt"]
+[ext_resource type="Material" uid="uid://d2wh34nmpqcyi" path="res://Materials/master_material.tres" id="11_pjmii"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_e5kgj"]
-sky_top_color = Color(2.887845e-06, 0.8723209, 0.883354, 1)
-sky_horizon_color = Color(1.2003407, 1.2376888, 1.2286887, 1)
+sky_horizon_color = Color(1.1994231, 0.6563724, 0.54103416, 1)
 ground_horizon_color = Color(1.2003407, 1.2376888, 1.2286887, 1)
 
 [sub_resource type="Sky" id="Sky_gv3io"]
@@ -30,27 +32,6 @@ albedo_color = Color(1, 0.6627451, 1, 1)
 material = SubResource("StandardMaterial3D_gv3io")
 
 [sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_bbero"]
-
-[sub_resource type="VoxelGeneratorImage" id="VoxelGeneratorImage_gv3io"]
-channel = 0
-height_start = 0.0
-height_range = 40.0
-image = ExtResource("3_5i0ie")
-blur_enabled = true
-
-[sub_resource type="VoxelBlockyModelEmpty" id="VoxelBlockyModelEmpty_bbero"]
-
-[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_5muk8"]
-
-[sub_resource type="VoxelBlockyLibrary" id="VoxelBlockyLibrary_dljov"]
-models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_bbero"), SubResource("VoxelBlockyModelCube_5muk8")])
-
-[sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_akppw"]
-library = SubResource("VoxelBlockyLibrary_dljov")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e5kgj"]
-vertex_color_use_as_albedo = true
-albedo_color = Color(1, 0.5294118, 1, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_n6wh1"]
 resource_name = "palette"
@@ -101,6 +82,134 @@ albedo_color = Color(0.011764706, 0.78431374, 1, 1)
 [sub_resource type="SphereMesh" id="SphereMesh_akppw"]
 material = SubResource("StandardMaterial3D_dljov")
 
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_50hlt"]
+noise_type = 5
+frequency = 0.85
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_pjmii"]
+noise_type = 0
+frequency = 0.02
+
+[sub_resource type="VoxelGeneratorGraph" id="VoxelGeneratorGraph_0uhcw"]
+graph_data = {
+"connections": [[1, 0, 6, 0], [1, 0, 10, 0], [2, 0, 9, 0], [2, 0, 13, 2], [10, 0, 11, 2], [10, 0, 12, 2], [11, 0, 12, 0], [12, 0, 13, 1], [13, 0, 14, 0], [14, 0, 15, 0], [3, 0, 6, 1], [3, 0, 10, 1], [6, 0, 7, 0], [7, 0, 8, 0], [8, 0, 9, 1], [9, 0, 14, 2]],
+"nodes": {
+"1": {
+"auto_connect": false,
+"gui_position": Vector2(-106.66666666666669, 213.33333333333337),
+"type": "InputX"
+},
+"10": {
+"auto_connect": true,
+"gui_position": Vector2(481.41521683300755, 160.47173894433587),
+"name": &"Static_Noise",
+"noise": SubResource("FastNoiseLite_50hlt"),
+"type": "Noise2D"
+},
+"11": {
+"a": 1.0,
+"auto_connect": false,
+"b": 2.0,
+"gui_position": Vector2(480, 293.3333333333333),
+"name": &"Detail_Percentage",
+"threshold": 0.0,
+"type": "Select"
+},
+"12": {
+"auto_connect": false,
+"b": 3.0,
+"gui_position": Vector2(480, 453.3333333333333),
+"name": &"Hero_Percentage",
+"threshold": 0.4,
+"type": "Select"
+},
+"13": {
+"a": 4.0,
+"auto_connect": false,
+"gui_position": Vector2(800, 160),
+"name": &"Layer_Manager",
+"threshold": 0.0,
+"type": "Select"
+},
+"14": {
+"auto_connect": false,
+"b": 0.0,
+"gui_position": Vector2(1120, 186.66666666666663),
+"name": &"Master_Gate",
+"threshold": 0.0,
+"type": "Select"
+},
+"15": {
+"auto_connect": false,
+"gui_position": Vector2(1428.1777605678026, 199.28061775364685),
+"type": "OutputType"
+},
+"2": {
+"auto_connect": false,
+"gui_position": Vector2(-106.66666666666669, 533.3333333333334),
+"type": "InputY"
+},
+"3": {
+"auto_connect": false,
+"gui_position": Vector2(-106.66666666666669, 400),
+"type": "InputZ"
+},
+"6": {
+"auto_connect": true,
+"gui_position": Vector2(133.33333333333334, 106.66666666666669),
+"name": &"Wave_Noise",
+"noise": SubResource("FastNoiseLite_pjmii"),
+"type": "Noise2D"
+},
+"7": {
+"auto_connect": false,
+"b": 1.5,
+"gui_position": Vector2(133.33333333333334, 240),
+"type": "Multiply"
+},
+"8": {
+"auto_connect": false,
+"b": 1.5,
+"gui_position": Vector2(133.33333333333334, 373.3333333333333),
+"type": "Add"
+},
+"9": {
+"auto_connect": false,
+"gui_position": Vector2(133.33333333333334, 506.6666666666667),
+"type": "Subtract"
+}
+},
+"version": 2
+}
+
+[sub_resource type="VoxelBlockyModelEmpty" id="VoxelBlockyModelEmpty_ybb3b"]
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ybb3b"]
+material_override_0 = ExtResource("11_pjmii")
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_pjmii"]
+material_override_0 = ExtResource("11_pjmii")
+tile_top = Vector2i(2, 0)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_0uhcw"]
+material_override_0 = ExtResource("11_pjmii")
+tile_top = Vector2i(2, 2)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_50hlt"]
+material_override_0 = ExtResource("11_pjmii")
+tile_top = Vector2i(3, 0)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ybcde"]
+material_override_0 = ExtResource("11_pjmii")
+tile_top = Vector2i(5, 0)
+
+[sub_resource type="VoxelBlockyLibrary" id="VoxelBlockyLibrary_uqynj"]
+bake_tangents = false
+models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_ybb3b"), SubResource("VoxelBlockyModelCube_ybb3b"), SubResource("VoxelBlockyModelCube_pjmii"), SubResource("VoxelBlockyModelCube_0uhcw"), SubResource("VoxelBlockyModelCube_50hlt"), SubResource("VoxelBlockyModelCube_ybcde")])
+
+[sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_uly8e"]
+library = SubResource("VoxelBlockyLibrary_uqynj")
+
 [node name="Hub" type="Node3D" unique_id=1740846699]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=939915480]
@@ -114,20 +223,30 @@ directional_shadow_mode = 0
 directional_shadow_max_distance = 80.0
 
 [node name="Player" parent="." unique_id=1084654853 instance=ExtResource("1_x3tnt")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -9)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, -9)
+
+[node name="VoxelViewer" parent="Player" index="6" unique_id=220781735]
+view_distance = 100
 
 [node name="Camera3D" parent="Player/CameraManager" parent_id_path=PackedInt32Array(1084654853, 2031014716) index="0" unique_id=981501342]
-transform = Transform3D(1, 0, 0, 0, 0.9085081775267219, 0.4178670738010765, 0, -0.4178670738010765, 0.9085081775267219, -4, 3.906847169005383, -4.457459112366391)
+transform = Transform3D(1, 0, 0, 0, 0.9085081775267219, 0.4178670738010765, 0, -0.4178670738010765, 0.9085081775267219, -4, 5.906847169005383, -4.457459112366391)
 fov = 70.0
 
 [node name="ExploreCam1" parent="Player/CameraManager/Explore" parent_id_path=PackedInt32Array(1084654853, 1297930009) index="0" unique_id=2052751808]
+transform = Transform3D(1, 0, 0, 0, 0.9085081775267219, 0.4178670738010765, 0, -0.4178670738010765, 0.9085081775267219, 0, 3.906847169005383, 4.542540887633609)
 follow_damping_value = Vector3(0.1, 0.2, 0.1)
 
 [node name="swarm_cam_1" parent="Player/CameraManager/Swarm" parent_id_path=PackedInt32Array(1084654853, 515798333) index="0" unique_id=1517337212]
-transform = Transform3D(0.7071067811865477, 0.40860704476192544, -0.5770964243269279, -5.551115e-17, 0.8161375900801602, 0.5778576243835054, 0.7071067811865472, -0.40860704476192555, 0.5770964243269282, -20.77547127576941, 21.120386277806194, 20.775471275769412)
+transform = Transform3D(0.7071067811865477, 0.40860704476192555, -0.5770964243269278, -2.7755576e-17, 0.8161375900801601, 0.5778576243835055, 0.7071067811865474, -0.40860704476192566, 0.5770964243269281, -20.77547127576941, 21.120386277806197, 20.775471275769412)
 follow_distance = 36.0
 vertical_rotation_offset = 0.6161012259539985
 spring_length = 36.0
+
+[node name="L_foot" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1084654853, 915844938) index="0" unique_id=1477942347]
+transform = Transform3D(1, 0, 0, 0, -0.17364817766692997, -0.9848077530122061, 0, 0.9848077530122061, -0.17364817766692997, 1.5707963267948966, 0, 0)
+
+[node name="L_hand" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1084654853, 915844938) index="2" unique_id=242618355]
+transform = Transform3D(1, 0, 0, 0, -0.42261826174069933, -0.90630778703665, 0, 0.90630778703665, -0.42261826174069933, 0.6370000000024447, 0.8999999999941793, 0.8722038280891896)
 
 [node name="CameraTransitionLayer" parent="." unique_id=858395322 instance=ExtResource("2_qpe5p")]
 
@@ -147,20 +266,16 @@ mesh = SubResource("PlaneMesh_b13uo")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Floor/Visuals/StaticBody3D" unique_id=1710246620]
 shape = SubResource("WorldBoundaryShape3D_bbero")
 
-[node name="VoxelTerrain" type="VoxelTerrain" parent="." unique_id=1379143051]
-transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0)
-generator = SubResource("VoxelGeneratorImage_gv3io")
-mesher = SubResource("VoxelMesherBlocky_akppw")
-max_view_distance = 50
-material_override = SubResource("StandardMaterial3D_e5kgj")
-
 [node name="HordeManager" type="Node3D" parent="." unique_id=1016560398 node_paths=PackedStringArray("player", "base_core")]
 script = ExtResource("4_50hlt")
 player = NodePath("../Player")
 base_core = NodePath("../BaseCore")
+active_scene = ExtResource("5_qpe5p")
+max_active_nodes = 10
+promote_dist = 13.0
 pool_size = 500
-max_concurrent_enemies = 50
-total_enemies_in_wave = 100
+max_concurrent_enemies = 100
+total_enemies_in_wave = 200
 despawn_distance = 28.0
 respawn_distance = 14.0
 
@@ -191,6 +306,31 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="BaseCore" unique_id=2038167711]
 mesh = SubResource("SphereMesh_akppw")
+
+[node name="WaveDirector" type="Node3D" parent="." unique_id=645467039 node_paths=PackedStringArray("horde_manager", "spawn_manager")]
+script = ExtResource("9_5i0ie")
+horde_manager = NodePath("../HordeManager")
+spawn_manager = NodePath("../SpawnManager")
+build_up_spawn_rate = 1.5
+peak_spawn_rate = 0.2
+
+[node name="DebugUI" type="CanvasLayer" parent="." unique_id=2054370995 node_paths=PackedStringArray("director", "horde_manager")]
+script = ExtResource("10_50hlt")
+director = NodePath("../WaveDirector")
+horde_manager = NodePath("../HordeManager")
+
+[node name="Label" type="Label" parent="DebugUI" unique_id=353736550]
+offset_left = 15.0
+offset_top = 22.0
+offset_right = 100.0
+offset_bottom = 45.0
+theme_override_colors/font_color = Color(1, 0, 0.0627451, 1)
+
+[node name="VoxelTerrain" type="VoxelTerrain" parent="." unique_id=342734692]
+generator = SubResource("VoxelGeneratorGraph_0uhcw")
+mesher = SubResource("VoxelMesherBlocky_uly8e")
+bounds = AABB(-536870900, -536870900, -536870900, 1073741800, 1073741800, 1073741800)
+max_view_distance = 50
 
 [editable path="Player"]
 [editable path="CameraTransitionLayer"]

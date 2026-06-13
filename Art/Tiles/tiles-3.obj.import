@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dkd81x8b2qmd"
+path="res://.godot/imported/tiles-3.obj-349b9fb3448ebdf6403a953ec7636e91.mesh"
+
+[deps]
+
+files=["res://.godot/imported/tiles-3.obj-349b9fb3448ebdf6403a953ec7636e91.mesh"]
+
+source_file="res://Art/Tiles/tiles-3.obj"
+dest_files=["res://.godot/imported/tiles-3.obj-349b9fb3448ebdf6403a953ec7636e91.mesh", "res://.godot/imported/tiles-3.obj-349b9fb3448ebdf6403a953ec7636e91.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(0.65, 0.65, 0.65)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false
