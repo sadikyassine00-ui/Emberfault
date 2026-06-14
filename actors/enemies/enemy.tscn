@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://c2k3lxlonuxux"]
+
+[ext_resource type="ArrayMesh" uid="uid://pqdubq0488b0" path="res://assets/characters/cuby/cube_mesh.tres" id="1_7o3vr"]
+
+[node name="Visuals" type="MeshInstance3D" unique_id=1144612796]
+transform = Transform3D(0.15, 0, 0, 0, 0.15, 0, 0, 0, 0.15, 0, 0, 0)
+mesh = ExtResource("1_7o3vr")
+skeleton = NodePath("")

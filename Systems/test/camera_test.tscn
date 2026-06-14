@@ -1,0 +1,105 @@
+[gd_scene format=3 uid="uid://ddi5m18lve1c2"]
+
+[ext_resource type="Material" uid="uid://cjbcivgpuyccj" path="res://assets/materials/floor.tres" id="1_mkbvx"]
+[ext_resource type="Texture2D" uid="uid://54va4fq186bj" path="res://assets/sky/sky_115_2k.png" id="2_n78wx"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_n78wx"]
+material = ExtResource("1_mkbvx")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2yjip"]
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_28nu6"]
+albedo_color = Color(1, 0.31764707, 0.45490196, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_2qq08"]
+material = SubResource("ORMMaterial3D_28nu6")
+size = Vector3(1.7231445, 2.0332031, 2.6065674)
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_2vqi4"]
+albedo_color = Color(1, 0.31764707, 0.45490196, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_mnsr6"]
+material = SubResource("ORMMaterial3D_2vqi4")
+size = Vector3(4.164795, 4.0507813, 2.6065674)
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_x8fjb"]
+albedo_color = Color(0.07058824, 1, 1, 1)
+
+[sub_resource type="PrismMesh" id="PrismMesh_p8x5g"]
+material = SubResource("ORMMaterial3D_x8fjb")
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_0dr8g"]
+albedo_color = Color(1, 0.52156866, 0.6117647, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_3p8b6"]
+material = SubResource("ORMMaterial3D_0dr8g")
+top_radius = 2.3701172
+bottom_radius = 2.3701172
+height = 4.0324707
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_b1edu"]
+albedo_color = Color(1, 1, 0.13725491, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hyq38"]
+material = SubResource("ORMMaterial3D_b1edu")
+top_radius = 2.3701172
+bottom_radius = 2.3701172
+height = 10.675293
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_2yjip"]
+panorama = ExtResource("2_n78wx")
+
+[sub_resource type="Sky" id="Sky_f5tsa"]
+sky_material = SubResource("PanoramaSkyMaterial_2yjip")
+
+[sub_resource type="Environment" id="Environment_2qq08"]
+background_mode = 2
+sky = SubResource("Sky_f5tsa")
+tonemap_mode = 2
+
+[node name="Camera test" type="Node3D" unique_id=1247733127]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=445331588]
+transform = Transform3D(368.62753, 0, 0, 0, 1, 0, 0, 0, 282.50177, 0, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=216153810]
+mesh = SubResource("BoxMesh_n78wx")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1802551124]
+shape = SubResource("BoxShape3D_2yjip")
+
+[node name="Cube2" type="MeshInstance3D" parent="." unique_id=672411722]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.481403, 1.0247021, -12.902661)
+mesh = SubResource("BoxMesh_2qq08")
+skeleton = NodePath("../Cube")
+
+[node name="Cube" type="MeshInstance3D" parent="." unique_id=1232461603]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.526136, 2.5305629, -5.648047)
+mesh = SubResource("BoxMesh_mnsr6")
+
+[node name="accessory" type="MeshInstance3D" parent="." unique_id=61362150]
+transform = Transform3D(-0.10647564, 0, -0.99972606, 0, 3.1775322, 0, 4.548021, 0, -0.023405006, 3.1959896, 2.1648927, 14.254166)
+mesh = SubResource("PrismMesh_p8x5g")
+
+[node name="accessory2" type="MeshInstance3D" parent="." unique_id=781966681]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.798397, 2.4150696, 15.899779)
+mesh = SubResource("CylinderMesh_3p8b6")
+skeleton = NodePath("../accessory1")
+
+[node name="accessory1" type="MeshInstance3D" parent="." unique_id=1766262094]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7275124, 5.876727, 3.5746312)
+mesh = SubResource("CylinderMesh_hyq38")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=682334501]
+transform = Transform3D(0.77216864, 0.23923206, -0.5886626, 0.0018743428, 0.92555684, 0.37860423, 0.63541496, -0.29344964, 0.7142376, -46.37818, 40.31488, 70.43536)
+fov = 20.0
+size = 40.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=994831210]
+environment = SubResource("Environment_2qq08")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1340442019]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+light_color = Color(0.7254902, 1, 1, 1)
+shadow_enabled = true
+directional_shadow_max_distance = 200.0

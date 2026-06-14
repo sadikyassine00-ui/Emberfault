@@ -1,8 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://fn3rex54a23f"]
-
-[ext_resource type="Texture2D" uid="uid://dknh50oovqq2h" path="res://Art/Characters/Axyl/axyl_Axyl-6.png" id="1_m6rhb"]
-
-[resource]
-resource_name = "palette.006"
-cull_mode = 2
-albedo_texture = ExtResource("1_m6rhb")
