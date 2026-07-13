@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://cfjk74ks0wvm4"]
+
+[ext_resource type="Script" uid="uid://3qb7hku6p4sx" path="res://actors/player/VFX/SlashVFX.gd" id="1_wb01u"]
+[ext_resource type="Material" uid="uid://c60h1ki60qlhx" path="res://actors/player/VFX/slash.tres" id="2_73fvi"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_73fvi"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_yltw8"]
+sky_material = SubResource("ProceduralSkyMaterial_73fvi")
+
+[sub_resource type="Environment" id="Environment_tr4xt"]
+background_mode = 2
+sky = SubResource("Sky_yltw8")
+tonemap_mode = 2
+glow_enabled = true
+glow_bloom = 0.3
+glow_blend_mode = 0
+
+[sub_resource type="TorusMesh" id="TorusMesh_73fvi"]
+inner_radius = 0.639
+
+[node name="SlashVFX" type="Node3D" unique_id=1451484746]
+script = ExtResource("1_wb01u")
+duration = 0.5
+flip_horizontal = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=491676694]
+environment = SubResource("Environment_tr4xt")
+
+[node name="SlashMesh" type="MeshInstance3D" parent="." unique_id=780978063]
+transform = Transform3D(4, 0, 0, 0, 2.4492935982947064e-16, -4, 0, 4, 2.4492935982947064e-16, 0, 0, 0)
+material_override = ExtResource("2_73fvi")
+mesh = SubResource("TorusMesh_73fvi")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1489649619]
+transform = Transform3D(1, 0, 0, 0, 0.9908541256502961, -0.13493739912191471, 0, 0.13493739912191471, 0.9908541256502961, 0, 0.8861783375301373, 5.782099104382276)
+visible = false

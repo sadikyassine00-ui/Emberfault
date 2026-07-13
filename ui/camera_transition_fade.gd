@@ -5,13 +5,6 @@ extends Control
 func _ready() -> void:
 	modulate.a = 0
 	hide()
-	camera_manager.camera_toggled.connect(_on_camera_toggled)
-
-func _on_camera_toggled():
-	fade_in(0.2) # Start the fade in
-	# Wait for 1 second before moving to the next line
-	await get_tree().create_timer(0.7).timeout
-	fade_out(0.2) # Start the fade out
 
 
 func fade_in(duration: float = 1.0) -> Tween:

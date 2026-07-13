@@ -1,21 +1,31 @@
 [gd_scene format=3 uid="uid://iys5k8v4l8dp"]
 
 [ext_resource type="Script" uid="uid://bmv5dc2kexbmi" path="res://actors/enemies/active_enemy.gd" id="1_3jsq1"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2jgyw"]
-albedo_color = Color(1, 0.13725491, 0.31764707, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_3jsq1"]
-material = SubResource("StandardMaterial3D_2jgyw")
+[ext_resource type="ArrayMesh" uid="uid://bccp0xp2untlt" path="res://Art/skull_mesh.tres" id="2_om6ks"]
+[ext_resource type="Script" uid="uid://bepqhfunigujq" path="res://components/health_component.gd" id="2_sukvk"]
+[ext_resource type="Script" uid="uid://d2peja63qwgiu" path="res://actors/enemies/enemy_combat_hitbox.gd" id="3_x5ktk"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_tccgq"]
 
-[node name="ActiveEnemy" type="CharacterBody3D" unique_id=1565032759]
-collision_layer = 4
-script = ExtResource("1_3jsq1")
+[sub_resource type="BoxShape3D" id="BoxShape3D_om6ks"]
 
-[node name="Visuals" type="MeshInstance3D" parent="." unique_id=329670037]
-mesh = SubResource("BoxMesh_3jsq1")
+[node name="ActiveEnemy" type="Node3D" unique_id=2001902983]
+script = ExtResource("1_3jsq1")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1972973765]
 shape = SubResource("BoxShape3D_tccgq")
+
+[node name="Visuals" type="MeshInstance3D" parent="." unique_id=329670037]
+mesh = ExtResource("2_om6ks")
+
+[node name="HealthComponent" type="Node3D" parent="." unique_id=23916842]
+script = ExtResource("2_sukvk")
+iframe_duration = 0.0
+
+[node name="CombatHitbox" type="Area3D" parent="." unique_id=863865072]
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("3_x5ktk")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CombatHitbox" unique_id=1825729719]
+shape = SubResource("BoxShape3D_om6ks")

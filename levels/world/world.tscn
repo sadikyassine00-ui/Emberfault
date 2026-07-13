@@ -62,12 +62,8 @@ dash_speed = 35.0
 [node name="Camera3D" parent="Player/CameraManager" parent_id_path=PackedInt32Array(1084654853, 1903350647) index="0" unique_id=1166366937]
 transform = Transform3D(1, 0, 0, 0, 0.90850824, 0.417867, 0, -0.417867, 0.90850824, -14.858843, 5.4212275, -14.868595)
 
-[node name="ExploreCam1" parent="Player/CameraManager/Explore" parent_id_path=PackedInt32Array(1084654853, 686486827) index="0" unique_id=2052751808]
-transform = Transform3D(1, 0, 0, 0, 0.90850824, 0.417867, 0, -0.417867, 0.90850824, 0, 3.9068472, 4.5425415)
-tween_resource = SubResource("Resource_2vqi4")
-
-[node name="swarm_cam_1" parent="Player/CameraManager/Swarm" parent_id_path=PackedInt32Array(1084654853, 1061830555) index="0" unique_id=1384928385]
-transform = Transform3D(0.70710665, 0.40759927, -0.5778088, 4.4703484e-08, 0.8171449, 0.57643235, 0.7071069, -0.40759918, 0.57780856, -14.445219, 14.72832, 14.445217)
+[node name="isometric_camera" parent="Player/CameraManager/Isometric" parent_id_path=PackedInt32Array(1084654853, 1061830555) index="0" unique_id=1384928385]
+transform = Transform3D(0.70710665, 0.40759927, -0.5778086, 4.4703484e-08, 0.8171449, 0.57643235, 0.7071069, -0.40759918, 0.57780856, -14.445219, 14.72832, 14.445217)
 tween_resource = SubResource("Resource_yvejt")
 follow_distance = 25.0
 spring_length = 25.0

@@ -1,310 +1,332 @@
 extends Node3D
 class_name HordeManager
 
-@export_category("Core References")
+# =============================================================================
+# 🏢 CORE ENGINE BINDINGS
+# =============================================================================
+@export_group("Core Nodes")
 @export var player: Node3D
 @export var base_core: Node3D
-@export var terrain_collision_mask: int = 1
+@export var multimesh: MultiMeshInstance3D
+@export var active_enemy_scene: PackedScene
+@export var simulation_processor: SwarmSimulationProcessor
 
-@export_category("Promotion Settings (Layer A/B)")
-@export var active_scene: PackedScene
-@export var max_active_nodes: int = 20       # Try 10 or 20 for your laptop
-@export var promote_dist: float = 12.0       # When to turn into a Real Node
-@export var demote_dist: float = 16.0        # When to revert to MultiMesh
-
-@export_category("Wave & Pool Settings")
+@export_group("Horde Framework Settings")
 @export var pool_size: int = 1000
-@export var max_concurrent_enemies: int = 150
-@export var total_enemies_in_wave: int = 500
-
-@export_category("Swarm Settings")
+@export var max_concurrent_enemies: int = 90
 @export var base_speed: float = 4.5
-@export var despawn_distance: float = 60.0
-@export var respawn_distance: float = 35.0
+@export var max_active_nodes: int = 15
 
-@onready var multi_mesh_instance = $MultiMeshInstance3D
-@onready var multimesh = multi_mesh_instance.multimesh
+@export_group("Promotion Envelope Thresholds")
+@export var promote_dist: float = 14.5
+@export var demote_dist: float = 22.0
 
-# --- POOL TRACKERS ---
+# =============================================================================
+# 📊 EXPOSED BASELINE BALANCING MATRIX (DAY 1, SECTOR 1)
+# =============================================================================
+@export_group("Base Archetype Baseline Balances")
+
+@export_subgroup("0: Core-Breaker (Gold)")
+@export var breaker_base_hp: float = 30.0
+@export var breaker_base_dmg: float = 0.5
+
+@export_subgroup("1: Player-Hunter (Red)")
+@export var hunter_base_hp: float = 45.0
+@export var hunter_base_dmg: float = 8.0
+
+@export_subgroup("2: Earth-Shaker (Purple)")
+@export var shaker_base_hp: float = 140.0
+@export var shaker_base_dmg: float = 25.0
+
+# =============================================================================
+# 📈 HORDE DIFFICULTY SCALING COEFFICIENTS
+# =============================================================================
+@export_group("Timeline Engine State")
+@export_range(1, 3) var current_sector: int = 1
+@export_range(1, 4) var current_day: int = 1
+
+@export_group("Horde Attribute Growth Scales")
+@export var hp_growth_per_day: float = 0.08
+@export var dmg_growth_per_day: float = 0.05
+@export var sector_difficulty_multiplier: float = 1.35
+
+@export_group("Wave Composition Ratios (Auto-Clamped to 100% Total)")
+@export_range(0.0, 100.0, 1.0) var pct_core_breakers: float = 70.0:
+	set(val):
+		pct_core_breakers = val
+		_clamp_wave_percentages(0)
+
+@export_range(0.0, 100.0, 1.0) var pct_player_hunters: float = 20.0:
+	set(val):
+		pct_player_hunters = val
+		_clamp_wave_percentages(1)
+
+@export_range(0.0, 100.0, 1.0) var pct_earth_shakers: float = 10.0:
+	set(val):
+		pct_earth_shakers = val
+		_clamp_wave_percentages(2)
+
+@export_group("Visual Archetype Assets")
+@export var color_core_breaker: Color = Color.GOLD
+@export var color_player_hunter: Color = Color.CRIMSON
+@export var color_earth_shaker: Color = Color.PURPLE
+
+# =============================================================================
+# 💾 FLAT MEMORY DATA ARRAYS (ZERO RUN-TIME HEAP CHURN)
+# =============================================================================
+var positions: PackedVector3Array
+var velocities: PackedVector3Array
+var states: PackedInt32Array # 0 = Dead | 1 = Background Swarm | 2 = Promoted Actor
+var intents: PackedInt32Array # 0 = Targets Player | 1 = Targets Base Core
+var enemy_types: PackedInt32Array # 0 = Core-Breaker | 1 = Player-Hunter | 2 = Earth-Shaker
+var speed_variances: PackedFloat32Array
+var health_array: PackedFloat32Array
+var damage_array: PackedFloat32Array
+var preferred_distances_sq: PackedFloat32Array
+var orbital_speeds: PackedFloat32Array
+
+var current_spawn_type: int = 0
+var target_hunter_ratio: float = 0.25
+
+# Tracking registers
 var alive_count: int = 0
-var total_spawned_count: int = 0
 var highest_active_index: int = 0
 
-var positions = PackedVector3Array()
-var velocities = PackedVector3Array()
-var states = PackedInt32Array()    # 0 = Dead, 1 = Swarm (MultiMesh), 2 = Promoted (Node)
-var intents = PackedInt32Array()   # 0 = Target Player, 1 = Target Base
+var node_pool: Array[Node3D] = []
+var promotion_processor: HordePromotionProcessor
 
-var speed_variances = PackedFloat32Array()
-var preferred_distances_sq = PackedFloat32Array()
-var orbital_speeds = PackedFloat32Array()
+# =============================================================================
+# ⚙️ SYSTEM LIFECYCLE ENGINE PROCEDURES
+# =============================================================================
+func _ready() -> void:
+	promotion_processor = HordePromotionProcessor.new()
+	add_child(promotion_processor)
 
-# The Pre-warmed Node Pool
-var node_pool: Array[ActiveEnemy] = []
+	if not simulation_processor:
+		simulation_processor = SwarmSimulationProcessor.new()
+		add_child(simulation_processor)
 
-func _ready():
-	# 1. Initialize MultiMesh Math Pool
-	multimesh.instance_count = pool_size
-	multimesh.visible_instance_count = pool_size
+	if not multimesh:
+		multimesh = get_node_or_null("MultiMeshInstance3D") as MultiMeshInstance3D
 
+	_initialize_matrices()
+	_initialize_node_pool()
+
+func _initialize_matrices() -> void:
 	positions.resize(pool_size)
 	velocities.resize(pool_size)
 	states.resize(pool_size)
 	intents.resize(pool_size)
+	enemy_types.resize(pool_size)
 	speed_variances.resize(pool_size)
+	health_array.resize(pool_size)
+	damage_array.resize(pool_size)
 	preferred_distances_sq.resize(pool_size)
 	orbital_speeds.resize(pool_size)
 
+	states.fill(0)
+
+	if multimesh and multimesh.multimesh:
+		multimesh.custom_aabb = AABB(Vector3(-10000, -10000, -10000), Vector3(20000, 20000, 20000))
+		multimesh.multimesh.instance_count = pool_size
+		multimesh.multimesh.visible_instance_count = 0
+
+func _initialize_node_pool() -> void:
+	if not active_enemy_scene:
+		return
+	for i in range(max_active_nodes):
+		var node = active_enemy_scene.instantiate()
+		add_child(node)
+		if node.has_method("deactivate"):
+			node.deactivate()
+		node_pool.append(node)
+
+func _physics_process(delta: float) -> void:
+	if alive_count > 0:
+		if simulation_processor:
+			simulation_processor.process_swarm_physics(self, delta)
+		if promotion_processor:
+			promotion_processor.process_promotions(self)
+
+# =============================================================================
+# 🌊 HORDE LOGIC MANAGEMENT PIPELINES
+# =============================================================================
+func spawn_wave_ring(target: Node3D, radius: float, count: int) -> void:
+	if alive_count >= max_concurrent_enemies or not target:
+		return
+
+	var actual_spawn_count: int = min(count, max_concurrent_enemies - alive_count)
+	var target_pos: Vector3 = target.global_position
+	var angle_step: float = (PI * 2.0) / float(actual_spawn_count)
+	var current_angle: float = randf() * PI * 2.0
+
+	# Pre-compute progression scaling multipliers
+	var elapsed_days: int = ((current_sector - 1) * 4) + (current_day - 1)
+	var day_hp_mod: float = 1.0 + (elapsed_days * hp_growth_per_day)
+	var day_dmg_mod: float = 1.0 + (elapsed_days * dmg_growth_per_day)
+	var sector_mod: float = pow(sector_difficulty_multiplier, current_sector - 1)
+
+	var final_hp_multiplier: float = day_hp_mod * sector_mod
+	var final_dmg_multiplier: float = day_dmg_mod * sector_mod
+
+	var spawned: int = 0
 	for i in range(pool_size):
-		states[i] = 0
-		multimesh.set_instance_transform(i, Transform3D(Basis(), Vector3(0, -1000, 0)))
-
-	# 2. Pre-create the Real Nodes (Layer B)
-	if active_scene:
-		for i in range(max_active_nodes):
-			var n = active_scene.instantiate() as ActiveEnemy
-			add_child(n)
-			n.deactivate()
-			node_pool.append(n)
-
-# --- SPAWNING & COMBAT ---
-
-func spawn_enemy(spawn_pos: Vector3, is_saboteur: bool = false):
-	var target_idx = -1
-	for i in range(pool_size):
-		if states[i] == 0:
-			target_idx = i
+		if spawned >= actual_spawn_count:
 			break
 
-	if target_idx == -1: return
+		if states[i] == 0:
+			var offset := Vector3(cos(current_angle), 0, sin(current_angle)) * radius
+			positions[i] = target_pos + offset
+			positions[i].y = target_pos.y
+			velocities[i] = Vector3.ZERO
+			states[i] = 1
 
-	positions[target_idx] = spawn_pos
-	velocities[target_idx] = Vector3.ZERO
-	states[target_idx] = 1 # Start as Swarm
-	intents[target_idx] = 1 if is_saboteur else 0
+			speed_variances[i] = randf_range(0.85, 1.15)
+			preferred_distances_sq[i] = randf_range(1.0, 9.0)
+			orbital_speeds[i] = randf_range(0.8, 1.4)
 
-	var start_color = Color(0.6, 0.2, 0.8) if is_saboteur else Color.WHITE
-	multimesh.set_instance_color(target_idx, start_color)
+			# =============================================================================
+			# ⚡ PACING ENGINE ROUTING
+			# =============================================================================
+			var type_index: int = current_spawn_type
 
-	speed_variances[target_idx] = randf_range(0.7, 0.9) if is_saboteur else randf_range(0.9, 1.3)
-	preferred_distances_sq[target_idx] = pow(randf_range(3.0, 14.0), 2)
-	orbital_speeds[target_idx] = randf_range(0.5, 2.0) * (1.0 if randf() > 0.5 else -1.0)
+			# If spawning a standard swarm unit, apply the dynamic hunter ratio split
+			if type_index == 0 and randf() < target_hunter_ratio:
+				type_index = 1 # Divert vector targeting directly to player transform
 
-	alive_count += 1
-	total_spawned_count += 1
+			var chosen_color: Color = color_core_breaker
+			var unscaled_hp: float = breaker_base_hp
+			var unscaled_dmg: float = breaker_base_dmg
+			intents[i] = 1 # Default target path: Central Core
 
-	if target_idx >= highest_active_index:
-		highest_active_index = target_idx + 1
+			# Resolve specific attributes based on the final determined type
+			if type_index == 0:
+				type_index = 0
+				intents[i] = 1
+				chosen_color = color_core_breaker
+				unscaled_hp = breaker_base_hp
+				unscaled_dmg = breaker_base_dmg
+			elif type_index == 1:
+				intents[i] = 0 # Divert pathing matrix to player
+				chosen_color = color_player_hunter
+				unscaled_hp = hunter_base_hp
+				unscaled_dmg = hunter_base_dmg
+			elif type_index == 2:
+				intents[i] = 1
+				chosen_color = color_earth_shaker
+				unscaled_hp = shaker_base_hp
+				unscaled_dmg = shaker_base_dmg
 
-func notify_hit(idx: int):
-	if states[idx] == 0: return
+			enemy_types[i] = type_index
 
-	if intents[idx] == 1:
-		intents[idx] = 0 # Switch target to Player!
-		speed_variances[idx] = 1.5
-		multimesh.set_instance_color(idx, Color.RED)
-	else:
-		kill_enemy(idx)
+			# Apply calculated scaling to the inspector-defined baseline values
+			health_array[i] = unscaled_hp * final_hp_multiplier
+			damage_array[i] = unscaled_dmg * final_dmg_multiplier
 
-func kill_enemy(idx: int):
-	if states[idx] == 0: return
+			if multimesh and multimesh.multimesh:
+				multimesh.multimesh.set_instance_color(i, chosen_color)
 
-	# If this enemy was promoted to a real node, we must free the node back to the pool!
-	if states[idx] == 2:
-		var n = _find_node_for_idx(idx)
-		if n: n.deactivate()
+			alive_count += 1
+			highest_active_index = max(highest_active_index, i + 1)
+			current_angle += angle_step
+			spawned += 1
+
+func kill_enemy(idx: int) -> void:
+	if states[idx] == 0:
+		return
 
 	states[idx] = 0
 	alive_count -= 1
+
+	var associated_node = _find_node_for_idx(idx)
+	if associated_node and associated_node.has_method("deactivate"):
+		associated_node.deactivate()
+
+	if idx == highest_active_index - 1:
+		while highest_active_index > 0 and states[highest_active_index - 1] == 0:
+			highest_active_index -= 1
+
 	positions[idx] = Vector3(0, -1000, 0)
-	multimesh.set_instance_transform(idx, Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -1000, 0)))
+	if multimesh and multimesh.multimesh:
+		multimesh.multimesh.set_instance_transform(idx, Transform3D(Basis(), positions[idx]))
 
-# --- THE MAIN ENGINE ---
-
-func _physics_process(delta):
-	if alive_count == 0: return
-
-	var player_pos = player.global_position if player else Vector3.ZERO
-	var base_pos = base_core.global_position if base_core else Vector3.ZERO
-	var p_flat = Vector2(player_pos.x, player_pos.z)
-	var time_sec = Time.get_ticks_msec() / 1000.0
-	var frames = Engine.get_frames_drawn()
-	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(Vector3.ZERO, Vector3.ZERO)
-	query.collision_mask = terrain_collision_mask
-
-	var promote_sq = promote_dist * promote_dist
-	var demote_sq = demote_dist * demote_dist
-	var despawn_sq = despawn_distance * despawn_distance
-
-	for i in range(highest_active_index):
-		if states[i] == 0: continue # Dead
-
-		var current_pos = positions[i]
-
-		# For Promotion/Demotion, we only care about distance to the PLAYER'S CAMERA
-		var dist_to_player_sq = current_pos.distance_squared_to(player_pos)
-
-		# ==========================================
-		# PROMOTION / DEMOTION LOGIC
-		# ==========================================
-
-		if states[i] == 1 and dist_to_player_sq < promote_sq:
-			var free_node = _get_free_node()
-
-			if free_node:
-				# Normal Promotion (Pool has empty slots)
-				states[i] = 2
-				var target_node = player if intents[i] == 0 else base_core
-				free_node.activate(current_pos, i, target_node, speed_variances[i], preferred_distances_sq[i], orbital_speeds[i], self)
-				multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0,-1000,0)))
-				continue
-			else:
-				# POOL IS FULL! Attempt a Steal from the furthest active node.
-				var furthest_node = null
-				var max_dist_sq = -1.0
-
-				# Find the active node furthest from the player
-				for n in node_pool:
-					if n.is_active:
-						var n_flat = Vector2(n.global_position.x, n.global_position.z)
-						var n_dist_sq = p_flat.distance_squared_to(n_flat)
-						if n_dist_sq > max_dist_sq:
-							max_dist_sq = n_dist_sq
-							furthest_node = n
-
-				# HYSTERESIS: We only steal if we are significantly closer (e.g., 4 meters squared closer)
-				# This prevents enemies at the exact same distance from swapping rapidly every frame!
-				if furthest_node and dist_to_player_sq < (max_dist_sq - 4.0):
-					var stolen_idx = furthest_node.linked_idx
-
-					# 1. Demote the furthest guy back to a MultiMesh
-					states[stolen_idx] = 1
-					positions[stolen_idx] = furthest_node.global_position
-					furthest_node.deactivate()
-
-					# 2. Promote THIS guy using the newly freed node
-					states[i] = 2
-					var target_node = player if intents[i] == 0 else base_core
-					furthest_node.activate(current_pos, i, target_node, speed_variances[i], preferred_distances_sq[i], orbital_speeds[i], self)
-					multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0,-1000,0)))
-					continue
-
-		if states[i] == 2:
-			var n = _find_node_for_idx(i)
-			if n:
-				if dist_to_player_sq > demote_sq:
-					states[i] = 1 # Back to swarm
-					current_pos = n.global_position
-					n.deactivate()
+# =============================================================================
+# 🗜️ INTERNAL MATH RECTIFICATION UTILITIES
+# =============================================================================
+func _clamp_wave_percentages(last_modified: int) -> void:
+	var total: float = pct_core_breakers + pct_player_hunters + pct_earth_shakers
+	if total > 100.0:
+		var overflow: float = total - 100.0
+		match last_modified:
+			0:
+				if pct_player_hunters >= overflow: pct_player_hunters -= overflow
 				else:
-					# Keep math array synced with Real Node position so Raycasts still work
-					positions[i] = n.global_position
-					continue # Don't run swarm math for promoted enemies
+					overflow -= pct_player_hunters
+					pct_player_hunters = 0.0
+					pct_earth_shakers = max(0.0, pct_earth_shakers - overflow)
+			1:
+				if pct_core_breakers >= overflow: pct_core_breakers -= overflow
+				else:
+					overflow -= pct_core_breakers
+					pct_core_breakers = 0.0
+					pct_earth_shakers = max(0.0, pct_earth_shakers - overflow)
+			2:
+				if pct_core_breakers >= overflow: pct_core_breakers -= overflow
+				else:
+					overflow -= pct_core_breakers
+					pct_core_breakers = 0.0
+					pct_player_hunters = max(0.0, pct_player_hunters - overflow)
 
-		# ==========================================
-		# SWARM MATH LOGIC (Only runs for State 1)
-		# ==========================================
-
-		# 1. Decide Target
-		var target_pos = player_pos if intents[i] == 0 else base_pos
-		var dist_to_target_sq = current_pos.distance_squared_to(target_pos)
-
-		# 2. Tethering
-		if dist_to_target_sq > despawn_sq:
-			var random_angle = randf() * TAU
-			current_pos = target_pos + Vector3(cos(random_angle), 0, sin(random_angle)) * respawn_distance
-
-			query.from = current_pos + Vector3(0, 50, 0)
-			query.to = current_pos + Vector3(0, -50, 0)
-			var result = space_state.intersect_ray(query)
-			if result: current_pos.y = result.position.y + 1.0
-
-			positions[i] = current_pos
-			velocities[i] = Vector3.ZERO
-			continue
-
-		# 3. Pathing & Movement
-		var dir_to_target = Vector3.ZERO
-		if dist_to_target_sq > 0.001:
-			dir_to_target = (target_pos - current_pos) / sqrt(dist_to_target_sq)
-
-		var desired_velocity = Vector3.ZERO
-		var agitation = 1.0
-		var forward_speed = 0.0
-
-		if dist_to_target_sq > 400.0:
-			forward_speed = base_speed * speed_variances[i]
-		else:
-			var distance_error_sq = dist_to_target_sq - preferred_distances_sq[i]
-			if distance_error_sq > 2.0:
-				forward_speed = base_speed * speed_variances[i]
-			elif distance_error_sq > -1.0:
-				agitation = 0.05
-			else:
-				forward_speed = -1.5
-				agitation = 0.2
-
-		var forward_vec = dir_to_target * forward_speed
-		var tangent = Vector3.UP.cross(dir_to_target).normalized()
-		var orbit_intensity = clamp(10.0 / max(sqrt(dist_to_target_sq), 1.0), 0.5, 3.0)
-		var strafe_vec = tangent * (orbital_speeds[i] * orbit_intensity * agitation)
-		var shambling_vec = Vector3(sin(time_sec * 3.0 + i) * 1.5, 0, cos(time_sec * 2.5 + i) * 1.5) * agitation
-
-		# 4. Separation Web
-		var separation_vec = Vector3.ZERO
-		var neighbors = [i - 1, (i + 13) % highest_active_index]
-		if i == 0: neighbors[0] = highest_active_index - 1
-
-		for n_idx in neighbors:
-			if states[n_idx] != 0: # Check against both MultiMesh and Promoted nodes!
-				var push_dir = current_pos - positions[n_idx]
-				var dist_sq = push_dir.length_squared()
-				var bubble_size = 6.0
-
-				if dist_sq < bubble_size and dist_sq > 0.001:
-					var push_strength = bubble_size - dist_sq
-					var straight_push = push_dir.normalized()
-					if straight_push.dot(dir_to_target) < -0.2:
-						forward_vec *= 0.1
-					var squirm_slide = Vector3.UP.cross(straight_push) * (1.2 if i % 2 == 0 else -1.2)
-					separation_vec += (straight_push + squirm_slide).normalized() * (push_strength * 2.5 * agitation)
-
-		desired_velocity = forward_vec + strafe_vec + shambling_vec + separation_vec
-		if desired_velocity.length_squared() < 0.05 and agitation < 0.1:
-			desired_velocity = Vector3.ZERO
-
-		velocities[i] = velocities[i].lerp(desired_velocity, 5.0 * delta)
-		if velocities[i].length_squared() < 0.01: velocities[i] = Vector3.ZERO
-		current_pos += velocities[i] * delta
-
-		# 5. Voxel Ground Snapping
-		if frames % 10 == i % 10:
-			query.from = current_pos + Vector3(0, 50, 0)
-			query.to = current_pos + Vector3(0, -50, 0)
-			var result = space_state.intersect_ray(query)
-			if result: current_pos.y = result.position.y + 1.0
-
-		positions[i] = current_pos
-
-		# 6. GPU Update
-		var look_dir = dir_to_target
-		look_dir.y = 0
-		var t = Transform3D()
-		if look_dir.length_squared() > 0.001:
-			t = t.looking_at(look_dir, Vector3.UP)
-		t.origin = current_pos
-
-		multimesh.set_instance_transform(i, t)
-
-# --- POOL HELPERS ---
-
-func _get_free_node() -> ActiveEnemy:
+func _get_free_node() -> Node3D:
 	for n in node_pool:
 		if not n.is_active: return n
 	return null
 
-func _find_node_for_idx(idx: int) -> ActiveEnemy:
+func _find_node_for_idx(idx: int) -> Node3D:
 	for n in node_pool:
-		if n.linked_idx == idx: return n
+		if n.is_active and n.linked_idx == idx: return n
 	return null
+
+## Place this function cleanly inside your HordeManager.gd script
+
+func register_batch_strikes(indices: PackedInt32Array, payload: RefCounted, combo_index: int) -> void:
+	if indices.size() == 0 or not player:
+		return
+
+	var player_pos: Vector3 = player.global_position
+	var base_damage: float = payload.get("base_damage")
+
+	for idx in indices:
+		if states[idx] == 0: continue
+
+		health_array[idx] -= base_damage
+
+		# Inject physics displacement
+		var enemy_pos: Vector3 = positions[idx]
+		var knockback_dir := (enemy_pos - player_pos).normalized()
+		knockback_dir.y = 0.0
+
+		# AAA TWEAK: Reduce light attack knockback to keep units within your follow-up strike zone
+		var knockback_force: float = 5.5 if combo_index < 2 else 24.0
+		velocities[idx] += knockback_dir * knockback_force
+
+		if combo_index == 2:
+			intents[idx] = 0 # Attack 3 Aggro Hijack
+
+		# 4. Synchronize data records directly to live promoted wrapper nodes if active
+		var active_node = _find_node_for_idx(idx)
+		if active_node:
+			var health_comp = active_node.get_node_or_null("HealthComponent")
+			if health_comp:
+				if "current_health" in health_comp:
+					health_comp.current_health = health_array[idx]
+				elif "health" in health_comp:
+					health_comp.health = health_array[idx]
+
+			# Call hit reaction animation updates on the active 3D actor scene
+			if active_node.has_method("apply_hit_stagger_anim"):
+				active_node.apply_hit_stagger_anim()
+
+		# 5. Immediate structural death evaluation check
+		if health_array[idx] <= 0.0:
+			kill_enemy(idx)

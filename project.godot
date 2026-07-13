@@ -15,13 +15,14 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Voxel-Hearth"
-run/main_scene="uid://by5ahojo76rf7"
-config/features=PackedStringArray("4.6", "Double Precision", "Forward Plus")
+run/main_scene="uid://bi8m0l46ss0b8"
+config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
 PhantomCameraManager="*uid://duq6jhf6unyis"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [display]
 
@@ -33,7 +34,7 @@ window/vsync/vsync_mode=0
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/MagicaVoxel_Importer_with_Extensions/plugin.cfg", "res://addons/phantom_camera/plugin.cfg")
+enabled=PackedStringArray("res://addons/MagicaVoxel_Importer_with_Extensions/plugin.cfg", "res://addons/godot_ai/plugin.cfg", "res://addons/phantom_camera/plugin.cfg")
 
 [file_customization]
 
@@ -85,6 +86,7 @@ attack={
 3d_physics/layer_2="Player"
 3d_physics/layer_3="Enemy"
 3d_physics/layer_4="Enemy Radar"
+3d_physics/layer_5="Enemy Hurtbox"
 
 [physics]
 
@@ -94,13 +96,11 @@ common/physics_ticks_per_second=120
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1
-lights_and_shadows/positional_shadow/soft_shadow_filter_quality=1
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=0
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=0
 anti_aliasing/quality/msaa_3d=1
-scaling_3d/mode=1
-scaling_3d/scale=0.8
-scaling_3d/fsr_sharpness=0.5
-anti_aliasing/quality/screen_space_aa=1
 2d/snap/snap_2d_transforms_to_pixel=true
 2d/snap/snap_2d_vertices_to_pixel=true
 

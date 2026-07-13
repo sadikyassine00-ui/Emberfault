@@ -1,0 +1,15 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://c60h1ki60qlhx"]
+
+[ext_resource type="Shader" uid="uid://bb224p0njgaae" path="res://actors/player/VFX/procedural_slash.gdshader" id="1_vgi7c"]
+[ext_resource type="Texture2D" uid="uid://c8r6tggvc0i4h" path="res://actors/player/VFX/SlashEffect.png" id="2_qgkkf"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_vgi7c")
+shader_parameter/slash_texture = ExtResource("2_qgkkf")
+shader_parameter/base_color = Color(1, 0.34509805, 1, 1)
+shader_parameter/glow_intensity = 4.0
+shader_parameter/progress = 0.0
+shader_parameter/trail_length = 0.6330000300675
+shader_parameter/inner_radius = 0.25
+shader_parameter/outer_radius = 0.48
