@@ -17,6 +17,10 @@ var ground_clamp_query: PhysicsRayQueryParameters3D
 
 var current_scale_factor: float = 1.0
 
+# ⚡ VISUALS & DETAILED JITTER STATE
+var mesh_instance: MeshInstance3D = null
+var local_hit_flash: float = 0.0
+
 @export_category("Combat Settings")
 @export var attack_range: float = 2.2
 
@@ -45,6 +49,12 @@ func _ready() -> void:
 	set_physics_process(false)
 	hide()
 
+	# Defensive lookup for mesh container (avoids hardcoded node path breaks)
+	for child in get_children():
+		if child is MeshInstance3D:
+			mesh_instance = child
+			break
+
 	var health_comp = get_node_or_null("HealthComponent")
 	if health_comp:
 		if health_comp.has_signal("entity_died"):
@@ -69,10 +79,11 @@ func activate(pos: Vector3, idx: int, target: Node3D, spd_var: float, pref_dist:
 	orbital_speed = orb_spd
 	horde_mgr = mgr
 	velocity = Vector3.ZERO
+	local_hit_flash = 0.0
 
 	current_scale_factor = mgr.enemy_scale
 
-	# --- ⚡ PERFECT FACING & SCALE HANDOFF ---
+	# Mirror the exact flipped-Z basis calculation from the background simulation processor
 	var vel = mgr.velocities[idx]
 	var flat_vel := Vector3(vel.x, 0.0, vel.z)
 	if flat_vel.length_squared() > 0.05:
@@ -82,6 +93,9 @@ func activate(pos: Vector3, idx: int, target: Node3D, spd_var: float, pref_dist:
 		global_transform.basis = Basis(right, up, back_dir).scaled(Vector3(current_scale_factor, current_scale_factor, current_scale_factor))
 	else:
 		global_transform.basis = Basis().scaled(Vector3(current_scale_factor, current_scale_factor, current_scale_factor))
+
+	if mesh_instance:
+		mesh_instance.set_instance_shader_parameter("hit_flash_intensity", 0.0)
 
 	var health_comp = get_node_or_null("HealthComponent")
 	if health_comp:
@@ -108,9 +122,16 @@ func deactivate() -> void:
 	my_target = null
 	horde_mgr = null
 	velocity = Vector3.ZERO
+	local_hit_flash = 0.0
 	hide()
 	set_physics_process(false)
 	global_position = Vector3(0, -1000, 0)
+
+# ⚡ EXTERNAL TRIGGER: Sets hit flash to 100% and updates the shader parameter
+func trigger_hit_flash() -> void:
+	local_hit_flash = 1.0
+	if mesh_instance:
+		mesh_instance.set_instance_shader_parameter("hit_flash_intensity", 1.0)
 
 # =============================================================================
 # ⚔️ KINEMATIC SWARM PHYSICS LOOP
@@ -118,6 +139,12 @@ func deactivate() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_active or not my_target or not horde_mgr:
 		return
+
+	# ⚡ DECAY ACTIVE SHADER BINDINGS (Surgically accelerated to 15.0 decay for split-second pop)
+	if local_hit_flash > 0.0:
+		local_hit_flash = max(0.0, local_hit_flash - delta * 15.0)
+		if mesh_instance:
+			mesh_instance.set_instance_shader_parameter("hit_flash_intensity", local_hit_flash)
 
 	var current_pos: Vector3 = global_position
 	var target_pos: Vector3 = my_target.global_position
@@ -218,7 +245,6 @@ func _physics_process(delta: float) -> void:
 	next_pos.y = move_toward(current_pos.y, velocity.y, 22.0 * delta)
 	global_position = next_pos
 
-	# ⚡ SAFE API UPGRADE: Bypasses copy-on-write property array modification traps!
 	horde_mgr.set_enemy_pos_vel(linked_idx, global_position, velocity)
 
 	# 4. Smooth Rotational Facing (With Scale Preservation)

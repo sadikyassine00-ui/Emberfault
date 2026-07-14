@@ -24,7 +24,7 @@ sky = SubResource("Sky_gv3io")
 tonemap_mode = 3
 tonemap_exposure = 0.8
 glow_enabled = true
-glow_intensity = 0.2
+glow_intensity = 0.5
 glow_strength = 0.7
 glow_blend_mode = 0
 glow_hdr_threshold = 1.1
@@ -263,9 +263,10 @@ collision_mask = 2
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Floor/Visuals/StaticBody3D" unique_id=1710246620]
 shape = SubResource("WorldBoundaryShape3D_bbero")
 
-[node name="HordeManager" type="Node3D" parent="." unique_id=1016560398 node_paths=PackedStringArray("player", "multimesh", "simulation_processor", "promotion_processor", "voxel_terrain")]
+[node name="HordeManager" type="Node3D" parent="." unique_id=1016560398 node_paths=PackedStringArray("player", "core_node", "multimesh", "simulation_processor", "promotion_processor", "voxel_terrain")]
 script = ExtResource("4_50hlt")
 player = NodePath("../PlayerBody")
+core_node = NodePath("../BaseCore")
 multimesh = NodePath("MultiMeshInstance3D")
 active_enemy_scene = ExtResource("4_4k5b7")
 simulation_processor = NodePath("../SwarmProcessor")

@@ -13,13 +13,10 @@ class_name SwarmSimulationProcessor
 @export_category("Staging Ring Settings")
 @export var staging_radius: float = 13.0
 @export var orbit_speed_factor: float = 1.0
-## AAA Time-Slicing Window: 12 frames means only ~8 entities raycast per frame!
 @export var raycast_frame_stride: int = 12
 
 @export_category("AAA Polish Settings")
 @export var steering_inertia: float = 7.5
-@export var crowd_belt_thickness: float = 5.0
-
 @export_category("Vertical Alignment")
 @export var ground_offset: float = 1.0
 
@@ -34,7 +31,6 @@ var ground_clamp_query: PhysicsRayQueryParameters3D
 var bucket_headers: PackedInt32Array = PackedInt32Array()
 var bucket_next: PackedInt32Array = PackedInt32Array()
 
-# ⚡ BITWISE OPTIMIZATION: Power-of-two mask replacing slow modulo division (%)
 const HASH_SIZE: int = 2048
 const HASH_MASK: int = 2047
 
@@ -56,6 +52,12 @@ func process_swarm_physics(manager: Node, delta: float) -> void:
 	var player_pos: Vector3 = manager.player.global_position
 	var space_state: PhysicsDirectSpaceState3D = manager.get_world_3d().direct_space_state
 
+	var core_pos := Vector3.ZERO
+	var has_core: bool = false
+	if manager.core_node:
+		core_pos = manager.core_node.global_position
+		has_core = true
+
 	var live_count: int = manager.highest_active_index
 	if live_count == 0:
 		return
@@ -73,31 +75,31 @@ func process_swarm_physics(manager: Node, delta: float) -> void:
 	var current_frame: int = Engine.get_process_frames()
 	var time_sec: float = Time.get_ticks_msec() / 1000.0
 
-	# ⚡ REGISTRY LOCALIZATION: Local references to skip dictionary overhead inside loops
+	# Local references
 	var m_positions: PackedVector3Array = manager.positions
 	var m_velocities: PackedVector3Array = manager.velocities
 	var m_states: PackedByteArray = manager.states
 	var m_types: PackedInt32Array = manager.enemy_types
 	var m_variances: PackedFloat32Array = manager.speed_variances
-	var m_intents: PackedByteArray = manager.intents
+	var m_aggro_cooldowns: PackedFloat32Array = manager.aggro_cooldowns
+	# ⚡ LOCAL REGISTER BINDING: Flat visual hit timer cache reference
+	var m_hit_timers: PackedFloat32Array = manager.hit_timers
 
 	if "node_pool" in manager:
 		for n in manager.node_pool:
 			if n.get("is_active") and n.get("linked_idx") != -1:
 				promoted_mask[n.linked_idx] = 1
 
-	# Cache the inverse transform once per frame to protect our 16.6ms budget
 	var mm_inv_xform := Transform3D()
 	if manager.multimesh:
 		mm_inv_xform = manager.multimesh.global_transform.affine_inverse()
 
-	# Pre-calculate world wave times to eliminate 2,000+ sin/cos operations inside loops
 	var global_sin: float = sin(time_sec * 0.8)
 	var global_cos: float = cos(time_sec * 0.6)
 	var global_orbit_sin: float = sin(time_sec * 2.0)
 	var global_orbit_cos: float = cos(time_sec * 3.1)
 
-	# PASS 1: Build Spatial Grid Index Map (Optimized Bitwise Hash)
+	# PASS 1: Build Spatial Grid Index Map
 	for i in range(live_count):
 		if m_states[i] == 0: continue
 		var cell_x: int = int(floor(m_positions[i].x / cell_size))
@@ -109,6 +111,23 @@ func process_swarm_physics(manager: Node, delta: float) -> void:
 	# PASS 2: Fluid Kinematics Processing Loop
 	for i in range(live_count):
 		if m_states[i] == 0: continue
+
+		# ⚡ DECAY VISUAL HIT TIMERS (Linear Interpolated Decay on CPU)
+		var hit_val: float = m_hit_timers[i]
+		if hit_val > 0.0:
+			# Decays fully to zero over ~0.25 seconds (at 4.0 decay multiplier)
+			hit_val = max(0.0, hit_val - delta * 4.0)
+			m_hit_timers[i] = hit_val
+
+		if m_aggro_cooldowns[i] > 0.0:
+			m_aggro_cooldowns[i] -= delta
+			if m_aggro_cooldowns[i] <= 0.0:
+				m_types[i] = 0
+				m_aggro_cooldowns[i] = 0.0
+				if m_states[i] == 2:
+					var active_node = manager._find_node_for_idx(i)
+					if active_node and has_core:
+						active_node.my_target = manager.core_node
 
 		if promoted_mask[i] == 1:
 			var local_zero: Transform3D = mm_inv_xform * Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -1000, 0))
@@ -125,7 +144,10 @@ func process_swarm_physics(manager: Node, delta: float) -> void:
 		if target_height_cache == 0.0:
 			target_height_cache = current_pos.y + ground_offset
 
+		# Target Selection
 		var target_pos: Vector3 = player_pos
+		if type == 0 and has_core:
+			target_pos = core_pos
 
 		var to_target := Vector3(target_pos.x - current_pos.x, 0.0, target_pos.z - current_pos.z)
 		var dist_sq: float = to_target.length_squared()
@@ -133,10 +155,6 @@ func process_swarm_physics(manager: Node, delta: float) -> void:
 
 		var desired_heading := Vector3.ZERO
 		var base_move_speed: float = manager.base_speed * m_variances[i]
-
-		var slow_noise_x: float = global_sin * (0.25 + 0.05 * (i & 3))
-		var slow_noise_z: float = global_cos * (0.25 - 0.05 * (i & 3))
-		var wander_vec := Vector3(slow_noise_x, 0, slow_noise_z)
 
 		if distance > 0.1:
 			var dir_to_target := to_target / distance
@@ -229,9 +247,8 @@ func process_swarm_physics(manager: Node, delta: float) -> void:
 		current_pos.x += velocity_vec.x * delta
 		current_pos.z += velocity_vec.z * delta
 
-		# --- 🌊 DYNAMIC TIME-SLICED STEP-GLIDER ENGINE ---
+		# Step Glider
 		var active_offset: float = ground_offset
-
 		var dynamic_stride: int = raycast_frame_stride
 		if distance > 22.0:
 			dynamic_stride = raycast_frame_stride * 3
@@ -257,28 +274,30 @@ func process_swarm_physics(manager: Node, delta: float) -> void:
 		velocity_vec.y = target_height_cache
 		m_velocities[i] = velocity_vec
 
-		# --- ⚡ GPU TRANSFORMATION BUILDER (Facing Correction + MultiMesh Scaling) ---
+		# GPU Transformation Builder
 		var basis := Basis()
 		var flat_vel := Vector3(velocity_vec.x, 0.0, velocity_vec.z)
 		if flat_vel.length_squared() > 0.05:
-			# local -Z forward alignment fix
 			var back_dir: Vector3 = - flat_vel.normalized()
 			var right: Vector3 = Vector3.UP.cross(back_dir).normalized()
 			var up: Vector3 = back_dir.cross(right).normalized()
 			basis = Basis(right, up, back_dir)
 
-		# Inject scale factor directly into the transformation basis
 		var scale_val: float = manager.enemy_scale
 		basis = basis.scaled(Vector3(scale_val, scale_val, scale_val))
 
-		# Convert coordinates to MultiMesh Local Space
 		var world_xform := Transform3D(basis, current_pos)
 		var local_xform: Transform3D = mm_inv_xform * world_xform
 		manager.multimesh.multimesh.set_instance_transform(i, local_xform)
 
-	# Write packed registry back to main thread registers
+		# ⚡ WRITE TO CUSTOM DATA: Map the decaying hit timer straight to the GPU instance register
+		manager.multimesh.multimesh.set_instance_custom_data(i, Color(hit_val, 0.0, 0.0, 0.0))
+
+	# Commit memory back
 	manager.positions = m_positions
 	manager.velocities = m_velocities
+	manager.aggro_cooldowns = m_aggro_cooldowns
+	manager.hit_timers = m_hit_timers
 
 	manager.multimesh.multimesh.visible_instance_count = manager.highest_active_index
 

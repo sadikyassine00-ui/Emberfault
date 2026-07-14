@@ -6,6 +6,7 @@ class_name HordeManager
 # =============================================================================
 @export_group("Core Nodes")
 @export var player: Node3D
+@export var core_node: Node3D
 @export var multimesh: MultiMeshInstance3D
 @export var active_enemy_scene: PackedScene
 @export var simulation_processor: Node
@@ -20,6 +21,9 @@ class_name HordeManager
 @export var base_speed: float = 4.5
 @export var max_active_nodes: int = 20
 @export var enemy_scale: float = 1.0
+
+@export_range(0.0, 1.0) var hunter_ratio: float = 0.25
+@export var aggro_hijack_duration: float = 5.0
 
 @export_group("Promotion Envelope Thresholds")
 @export var promote_dist: float = 14.5
@@ -50,6 +54,8 @@ var health_array: PackedFloat32Array = PackedFloat32Array()
 var damage_array: PackedFloat32Array = PackedFloat32Array()
 var enemy_types: PackedInt32Array = PackedInt32Array()
 var intents: PackedByteArray = PackedByteArray()
+var aggro_cooldowns: PackedFloat32Array = PackedFloat32Array()
+var hit_timers: PackedFloat32Array = PackedFloat32Array()
 
 # Active Promoted Scene Node Wrapper Pool
 var node_pool: Array[ActiveEnemy] = []
@@ -60,6 +66,15 @@ var active_execution_pool: Array[ActiveEnemy] = []
 # Execution Indices
 var highest_active_index: int = 0
 var alive_count: int = 0
+
+# =============================================================================
+# ⚙️ AAA WARMUP REGISTERS
+# =============================================================================
+var warmup_stage: int = 0 # 0: Shader Compile, 1: Spaced Pool Instantiation, 2: Active Gameplay
+var _prewarm_dummy: Node3D = null
+var _prewarm_frames: int = 2
+var _init_index: int = 0
+const INIT_BATCH_SIZE: int = 2 # Spawns 2 nodes per frame on startup to prevent hitches
 
 func _ready() -> void:
 	positions.resize(pool_size)
@@ -72,6 +87,8 @@ func _ready() -> void:
 	damage_array.resize(pool_size)
 	enemy_types.resize(pool_size)
 	intents.resize(pool_size)
+	aggro_cooldowns.resize(pool_size)
+	hit_timers.resize(pool_size)
 
 	positions.fill(Vector3.ZERO)
 	velocities.fill(Vector3.ZERO)
@@ -83,22 +100,21 @@ func _ready() -> void:
 	damage_array.fill(default_damage)
 	enemy_types.fill(0)
 	intents.fill(0)
+	aggro_cooldowns.fill(0.0)
+	hit_timers.fill(0.0)
 
 	if voxel_terrain and voxel_terrain.has_method("get_voxel_tool"):
 		voxel_tool = voxel_terrain.get_voxel_tool()
 
 	if multimesh and multimesh.multimesh:
+		multimesh.multimesh.instance_count = 0
+		multimesh.multimesh.use_custom_data = true
 		multimesh.multimesh.instance_count = pool_size
 		for i in range(pool_size):
 			multimesh.multimesh.set_instance_color(i, Color.WHITE)
+			multimesh.multimesh.set_instance_custom_data(i, Color.TRANSPARENT)
 
-	if active_enemy_scene:
-		for i in range(max_active_nodes):
-			var enemy_instance = active_enemy_scene.instantiate() as ActiveEnemy
-			add_child(enemy_instance)
-			node_pool.append(enemy_instance)
-	else:
-		push_error("⚠️ [CRITICAL ARCH FAILURE] HordeManager is missing its ActiveEnemy PackedScene reference.")
+	# ⚡ Pool instantiation loop completely removed from _ready() to avoid entrance hitch!
 
 func get_voxel_ground_height(vt: RefCounted, x: float, start_y: float, z: float, active_offset: float) -> float:
 	var xi := int(floor(x))
@@ -152,8 +168,14 @@ func spawn_wave_ring(target: Node3D, radius: float, count: int) -> void:
 			orbital_speeds[i] = randf_range(0.8, 1.4)
 			health_array[i] = default_hp
 			damage_array[i] = default_damage
-			enemy_types[i] = 0
 			intents[i] = 0
+			aggro_cooldowns[i] = 0.0
+			hit_timers[i] = 0.0
+
+			if randf() < hunter_ratio:
+				enemy_types[i] = 1 # Player-Hunter
+			else:
+				enemy_types[i] = 0 # Core-Breaker
 
 			alive_count += 1
 			highest_active_index = max(highest_active_index, i + 1)
@@ -166,6 +188,8 @@ func kill_enemy(idx: int) -> void:
 			states[idx] = 0
 			positions[idx] = Vector3(0, -1000, 0)
 			velocities[idx] = Vector3.ZERO
+			aggro_cooldowns[idx] = 0.0
+			hit_timers[idx] = 0.0
 			alive_count = max(0, alive_count - 1)
 
 			if idx + 1 == highest_active_index:
@@ -217,7 +241,6 @@ func register_batch_strikes(indices: PackedInt32Array, payload: RefCounted, comb
 		if states[i] == 0:
 			continue # Already dead
 
-		# 1. Update Knockback Physics Trajectories
 		var enemy_pos := positions[i]
 		var push_dir := (enemy_pos - player_pos).normalized()
 		push_dir.y = 0.0
@@ -229,15 +252,22 @@ func register_batch_strikes(indices: PackedInt32Array, payload: RefCounted, comb
 			velocities[i] += push_dir * 14.0
 		else:
 			velocities[i] += push_dir * 26.0 + Vector3.UP * 7.5
-			if enemy_types[i] == 0:
-				enemy_types[i] = 1 # Hijack aggro!
 
-		# 2. Sync Damage
+		enemy_types[i] = 1
+		aggro_cooldowns[i] = aggro_hijack_duration
+		hit_timers[i] = 1.0
+
+		# Sync Damage and Targets
 		if states[i] == 2:
-			# Promoted Enemy: Let its actual HealthComponent resolve and update states
 			var active_node = _find_node_for_idx(i)
 			if active_node:
 				active_node.velocity = velocities[i]
+
+				if player:
+					active_node.my_target = player
+
+				if active_node.has_method("trigger_hit_flash"):
+					active_node.trigger_hit_flash()
 
 				var health_comp = active_node.get_node_or_null("HealthComponent")
 				if health_comp:
@@ -246,18 +276,27 @@ func register_batch_strikes(indices: PackedInt32Array, payload: RefCounted, comb
 					elif health_comp.has_method("apply_damage"):
 						health_comp.apply_damage(damage)
 
-					# Read the health value back immediately to keep our array in sync
 					if "current_health" in health_comp:
 						health_array[i] = health_comp.current_health
 					elif "health" in health_comp:
 						health_array[i] = health_comp.health
 		else:
-			# Background MultiMesh: Subtract damage directly inside the master array
+			if multimesh and multimesh.multimesh:
+				multimesh.multimesh.set_instance_custom_data(i, Color(1.0, 0.0, 0.0, 0.0))
+
 			health_array[i] -= damage
 			if health_array[i] <= 0.0:
 				kill_enemy(i)
 
+# =============================================================================
+# ⚡ PHYSICS PROCESS & WARMUP EXECUTION
+# =============================================================================
 func _physics_process(delta: float) -> void:
+	# ⚡ AAA PIPELINE CHECK: Restrict gameplay processing until the warmup sequence is complete
+	if warmup_stage < 2:
+		_execute_warmup_tick()
+		return
+
 	if simulation_processor and simulation_processor.has_method("process_swarm_physics"):
 		simulation_processor.process_swarm_physics(self, delta)
 
@@ -271,3 +310,41 @@ func _physics_process(delta: float) -> void:
 			if alive_count < max_concurrent_enemies:
 				var batch: int = min(15, max_concurrent_enemies - alive_count)
 				spawn_wave_ring(player, randf_range(18.0, 26.0), batch)
+
+# =============================================================================
+# ⚡ DETERMINISTIC STAGED STATE MACHINE
+# =============================================================================
+func _execute_warmup_tick() -> void:
+	match warmup_stage:
+		0: # --- STAGE 0: SHADER PRE-WARMING ---
+			if _prewarm_frames == 2:
+				var cam = get_viewport().get_camera_3d()
+				if cam and active_enemy_scene:
+					_prewarm_dummy = active_enemy_scene.instantiate()
+					cam.add_child(_prewarm_dummy)
+					# Offset directly into camera center-view to force renderer compilation
+					_prewarm_dummy.position = Vector3(0.0, 0.0, -1.0)
+					_prewarm_dummy.scale = Vector3(0.001, 0.001, 0.001) # Invisible, but drawn
+
+			_prewarm_frames -= 1
+			if _prewarm_frames <= 0:
+				if _prewarm_dummy:
+					_prewarm_dummy.queue_free()
+					_prewarm_dummy = null
+				warmup_stage = 1
+				print("⚡ [SHADER PRE-WARMED] Spectral skull shader compiled & cached on GPU.")
+
+		1: # --- STAGE 1: AMORTIZED POOL INSTANTIATION ---
+			if active_enemy_scene:
+				var limit: int = int(min(_init_index + INIT_BATCH_SIZE, max_active_nodes))
+				for i in range(_init_index, limit):
+					var enemy_instance = active_enemy_scene.instantiate() as ActiveEnemy
+					add_child(enemy_instance)
+					node_pool.append(enemy_instance)
+				_init_index = limit
+
+				if _init_index >= max_active_nodes:
+					warmup_stage = 2
+					print("⚡ [POOL WARMED] %d Node wrappers pooled over multiple frames. Zero ready hitch!" % max_active_nodes)
+			else:
+				warmup_stage = 2 # Fail-safe if scene reference is missing
