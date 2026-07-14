@@ -440,7 +440,13 @@ func take_screenshot(params: Dictionary) -> Dictionary:
 				return precheck
 		"game":
 			if not EditorInterface.is_playing_scene():
-				return ErrorCodes.make(ErrorCodes.INVALID_PARAMS, "Game is not running — use source='viewport' or start the project first")
+				## Same editor state as game_eval/game_command's gate below —
+				## same EDITOR_NOT_READY shape, not INVALID_PARAMS (the params
+				## were fine; the editor just isn't in the required state).
+				return ErrorCodes.make_not_ready(
+					ErrorCodes.SUB_EDITOR_GAME_NOT_RUNNING,
+					"Game is not running — start the project first", false,
+					"Use source='viewport' for the editor viewport, or start the game with project_run and retry.")
 			## The game is always a separate OS process (embedded mode just
 			## reparents its window into the editor). Reach the framebuffer
 			## via the debugger channel: the `_mcp_game_helper` autoload
@@ -830,31 +836,17 @@ func _find_current_camera_3d(root: Node) -> Camera3D:
 
 
 func _finalize_image(image: Image, source: String, max_resolution: int) -> Dictionary:
-	var original_width := image.get_width()
-	var original_height := image.get_height()
-
-	if max_resolution > 0:
-		var longest := maxi(original_width, original_height)
-		if longest > max_resolution:
-			var scale := float(max_resolution) / float(longest)
-			## Clamp to 1px min: extreme aspect ratios at very small max_resolution
-			## could otherwise compute a zero dimension and crash image.resize().
-			var new_w := maxi(1, int(original_width * scale))
-			var new_h := maxi(1, int(original_height * scale))
-			image.resize(new_w, new_h, Image.INTERPOLATE_LANCZOS)
-
-	var img_bytes := image.save_png_to_buffer()
-	var base64_str := Marshalls.raw_to_base64(img_bytes)
-
+	## Shared with the game-process copy in runtime/game_helper.gd (#716).
+	var encoded := McpScreenshotEncode.downscale_and_encode(image, max_resolution)
 	return {
 		"data": {
 			"source": source,
-			"width": image.get_width(),
-			"height": image.get_height(),
-			"original_width": original_width,
-			"original_height": original_height,
+			"width": encoded.width,
+			"height": encoded.height,
+			"original_width": encoded.original_width,
+			"original_height": encoded.original_height,
 			"format": "png",
-			"image_base64": base64_str,
+			"image_base64": encoded.base64,
 		}
 	}
 
@@ -958,7 +950,11 @@ func reload_plugin(_params: Dictionary) -> Dictionary:
 ## fail with "Could not find type X" when new class_name scripts are on disk
 ## but not yet registered, leaving the plugin disabled with no recovery path
 ## short of killing the editor. See issue #83.
-func _do_reload_plugin() -> void:
+# `static` is load-bearing: the deferred coroutine captures no `self`, so
+# it survives even if the EditorHandler RefCounted is freed mid-await —
+# which is exactly what reload does to this handler's owner. An instance
+# coroutine here resumes on a freed object under reload churn.
+static func _do_reload_plugin() -> void:
 	var fs := EditorInterface.get_resource_filesystem()
 	fs.scan()
 	var tree := Engine.get_main_loop() as SceneTree

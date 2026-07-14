@@ -1462,7 +1462,7 @@ func _on_restart_stale_server() -> void:
 	_last_rendered_server_text = ""
 	_refresh_server_version_label()
 	if not is_inside_tree():
-		_dispatch_stale_server_restart()
+		await _dispatch_stale_server_restart()
 		_server_restart_in_progress = false
 		_last_rendered_server_text = ""
 		_refresh_server_version_label()
@@ -1472,7 +1472,7 @@ func _on_restart_stale_server() -> void:
 
 func _restart_stale_server_after_feedback() -> void:
 	await get_tree().create_timer(0.15).timeout
-	if not _dispatch_stale_server_restart():
+	if not await _dispatch_stale_server_restart():
 		_server_restart_in_progress = false
 		_last_rendered_server_text = ""
 		_refresh_server_version_label()
@@ -1488,7 +1488,9 @@ func _dispatch_stale_server_restart() -> bool:
 	)
 	if int(status.get("state", ServerStateScript.UNINITIALIZED)) == ServerStateScript.INCOMPATIBLE:
 		if _plugin.has_method("recover_incompatible_server"):
-			return bool(_plugin.recover_incompatible_server())
+			## Coroutine in production (#678): recovery reports success only
+			## after the respawn walk completes and the connection unblocks.
+			return bool(await _plugin.recover_incompatible_server())
 	elif _plugin.has_method("force_restart_server"):
 		_plugin.force_restart_server()
 		return true
@@ -1809,6 +1811,10 @@ func _dispatch_client_action(client_id: String, action: String) -> void:
 	## `_perform_initial_client_status_refresh` and
 	## `_request_client_status_refresh`.
 	var server_url := ClientConfigurator.http_url()
+	## #691: refresh the env snapshot on main before this worker starts —
+	## configure/remove resolve CLI + config paths off-thread and must not
+	## race a concurrent spawn window's setenv/unsetenv.
+	ClientConfigurator.warm_env_snapshot()
 	var generation := int(_client_action_generations.get(client_id, 0)) + 1
 	_client_action_generations[client_id] = generation
 	var thread := Thread.new()
@@ -2070,10 +2076,13 @@ func _build_tools_tab(tabs: TabContainer) -> void:
 	core_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	core_row.add_child(core_label)
 	var core_count := Label.new()
-	core_count.text = "%d tools" % ToolCatalog.CORE_TOOLS.size()
+	core_count.text = "%d tools" % (ToolCatalog.CORE_TOOLS.size() + ToolCatalog.ALWAYS_ON_TOOLS.size())
 	core_count.add_theme_color_override("font_color", COLOR_MUTED)
 	core_row.add_child(core_count)
-	core_row.tooltip_text = ", ".join(ToolCatalog.CORE_TOOLS)
+	core_row.tooltip_text = "%s · always on: %s" % [
+		", ".join(ToolCatalog.CORE_TOOLS),
+		", ".join(ToolCatalog.ALWAYS_ON_TOOLS),
+	]
 	grid.add_child(core_row)
 
 	grid.add_child(HSeparator.new())
@@ -2166,8 +2175,11 @@ func _build_tools_domain_row(parent: VBoxContainer, entry: Dictionary) -> void:
 func _reset_tools_pending_from_setting() -> void:
 	## Read the saved setting → pending/saved arrays, then sync checkbox state.
 	## Unknown domain names in the setting (e.g. from an older plugin
-	## version) are silently dropped — matches the Python side's
-	## warn-and-continue behavior when it sees an unknown name.
+	## version) are dropped from the display here (only ids with a checkbox
+	## survive). The startup path is protected separately:
+	## `ClientConfigurator.excluded_domains()` filters unknown names before
+	## they reach `--exclude-domains`, whose `parse_exclude_list` hard-fails
+	## on them.
 	var saved_raw := ClientConfigurator.excluded_domains()
 	var saved := PackedStringArray()
 	if not saved_raw.is_empty():
@@ -2456,6 +2468,20 @@ func _show_manual_command_for(client_id: String) -> void:
 		return
 	row["manual_text"].text = cmd
 	row["manual_panel"].visible = true
+	## #680: for rows low in the list the panel materializes below the
+	## visible scroll area and the Configure click looks like a no-op.
+	## Deferred so the just-shown panel has a settled rect to scroll to.
+	_scroll_manual_panel_into_view.call_deferred(row["manual_panel"])
+
+
+func _scroll_manual_panel_into_view(panel: Control) -> void:
+	if panel == null or not panel.is_inside_tree():
+		return
+	var ancestor := panel.get_parent()
+	while ancestor != null and not (ancestor is ScrollContainer):
+		ancestor = ancestor.get_parent()
+	if ancestor != null:
+		(ancestor as ScrollContainer).ensure_control_visible(panel)
 
 
 func _on_copy_manual_command(client_id: String) -> void:
@@ -2601,7 +2627,7 @@ func _perform_initial_client_status_refresh() -> void:
 		return
 	if _client_rows.is_empty():
 		return
-	if _refresh_state == ClientRefreshStateScript.SHUTTING_DOWN:
+	if ClientRefreshStateScript.is_blocked_for_spawn(_refresh_state):
 		return
 	if _is_self_update_in_progress():
 		return
@@ -2660,6 +2686,10 @@ func _warm_strategy_bytecode() -> void:
 		JsonStrategy.verify_entry(any_client, {}, "")
 	TomlStrategy.format_body(PackedStringArray(), "")
 	CliStrategy.format_args(PackedStringArray(), "", "")
+	## #691: refresh the env snapshot on main before the worker starts, so
+	## its config-path expansions read the snapshot instead of racing a
+	## concurrent spawn window's setenv/unsetenv.
+	ClientConfigurator.warm_env_snapshot()
 
 
 func _begin_client_status_refresh_run() -> int:
@@ -2712,7 +2742,7 @@ func _request_client_status_refresh(force: bool = false) -> bool:
 			_client_status_refresh_pending_force = _client_status_refresh_pending_force or force
 			_refresh_clients_summary()
 			return false
-	if _refresh_state == ClientRefreshStateScript.SHUTTING_DOWN:
+	if ClientRefreshStateScript.is_blocked_for_spawn(_refresh_state):
 		return false
 	if not force and _is_client_status_refresh_in_cooldown():
 		return false

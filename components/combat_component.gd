@@ -16,6 +16,7 @@ signal strike_impact(position: Vector3)
 
 @export_category("Matrix Hitbox Settings")
 @export var strike_radius: float = 4.5 # Optimized to sweep elite combat layers
+@export_category("strike_arc_degrees")
 @export var strike_arc_degrees: float = 145.0
 
 @onready var combat_buffer: CombatBuffer = $CombatBuffer
@@ -23,11 +24,6 @@ signal strike_impact(position: Vector3)
 
 var parent: CharacterBody3D
 var state_machine: AnimationNodeStateMachinePlayback
-
-# Safe fallback reference definition if DamagePayload isn't registered globally
-class CoreDamagePayload extends RefCounted:
-	var base_damage: float = 15.0
-	var is_critical: bool = false
 
 var is_attacking: bool:
 	get:
@@ -98,8 +94,6 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 	var hit_indices := PackedInt32Array()
 	var origin: Vector3 = parent.global_position
 
-	# AAA MATRIX CRITICAL FIX: Changed from negative basis.z to positive basis.z
-	# This flips the mathematical cone 180 degrees to match the asset's forward swing heading vector!
 	var forward := visual_model.global_transform.basis.z
 	forward.y = 0.0
 	forward = forward.normalized() if forward.length_squared() > 0.001 else Vector3.FORWARD
@@ -115,7 +109,6 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 			var dist_sq: float = to_enemy.length_squared()
 
 			if dist_sq <= rad_sq:
-				# Attack 3 skips heading validation entirely to process a full 360 radial ring blast
 				if combo_step == 2 or dist_sq < 0.25:
 					hit_indices.append(i)
 				else:
@@ -129,11 +122,16 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 func _route_batch_to_horde_manager(indices: PackedInt32Array, combo_step: int) -> void:
 	if not horde_manager: return
 
-	var current_payload = CoreDamagePayload.new()
+	# ⚡ THE SOLVED ENGINE ROUTE: Direct allocation of your global DamagePayload resource class
+	var current_payload = DamagePayload.new()
+
 	if combo_step < 2:
 		current_payload.base_damage = 15.0
+		if "is_critical" in current_payload:
+			current_payload.is_critical = false
 	else:
 		current_payload.base_damage = 45.0
-		current_payload.is_critical = true
+		if "is_critical" in current_payload:
+			current_payload.is_critical = true
 
 	horde_manager.register_batch_strikes(indices, current_payload, combo_step)

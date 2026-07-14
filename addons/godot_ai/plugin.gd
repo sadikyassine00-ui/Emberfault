@@ -15,12 +15,12 @@ const EditorLogger := preload("res://addons/godot_ai/runtime/editor_logger.gd")
 const MANAGED_SERVER_PID_SETTING := "godot_ai/managed_server_pid"
 const MANAGED_SERVER_VERSION_SETTING := "godot_ai/managed_server_version"
 const MANAGED_SERVER_WS_PORT_SETTING := "godot_ai/managed_server_ws_port"
+## Per-launch WS handshake auth token (#690), generated at spawn and handed
+## to the server via the GODOT_AI_WS_TOKEN spawn env. Persisted alongside
+## the managed-server record so a reloaded plugin instance adopting the
+## same server keeps authenticating; cleared with the rest of the record.
+const MANAGED_SERVER_WS_TOKEN_SETTING := "godot_ai/managed_server_ws_token"
 const UPDATE_RELOAD_RUNNER_SCRIPT := preload("res://addons/godot_ai/update_reload_runner.gd")
-
-## Preloaded so `_stop_server` / `force_restart_server` have a local script
-## dependency for the cleanup helper. See utils/uv_cache_cleanup.gd for what
-## this does and why it lives next to the server-stop hot path.
-const UvCacheCleanup := preload("res://addons/godot_ai/utils/uv_cache_cleanup.gd")
 
 ## Server lifecycle + port discovery extracted from this file (#297 PR 5).
 ## State enums + version-check seam extracted in PR 6 (#297). Plugin.gd
@@ -30,7 +30,6 @@ const UvCacheCleanup := preload("res://addons/godot_ai/utils/uv_cache_cleanup.gd
 const ServerLifecycleManager := preload("res://addons/godot_ai/utils/server_lifecycle.gd")
 const PortResolver := preload("res://addons/godot_ai/utils/port_resolver.gd")
 const ServerStateScript := preload("res://addons/godot_ai/utils/mcp_server_state.gd")
-const StartupPathScript := preload("res://addons/godot_ai/utils/mcp_startup_path.gd")
 
 ## Plugin-class scripts used by this file. The script-local preload aliases
 ## are ordinary dependency shorthand and keep construction sites compact.
@@ -103,7 +102,6 @@ const SERVER_WATCH_MS := 30 * 1000
 const SPAWN_GRACE_MS := 5 * 1000
 const SERVER_STATUS_PATH := "/godot-ai/status"
 const SERVER_STATUS_PROBE_TIMEOUT_MS := 800
-const SERVER_HANDSHAKE_VERSION_TIMEOUT_MS := 5 * 1000
 const STARTUP_TRACE_COUNTER_NAMES := [
 	"powershell",
 	"netstat",
@@ -161,6 +159,12 @@ var _debugger_plugin
 var _lifecycle
 static var _server_started_this_session := false  # guard against re-entrant spawns
 static var _resolved_ws_port := ClientConfigurator.DEFAULT_WS_PORT
+## Per-launch WS handshake auth token (#690). Static for the same reason as
+## _resolved_ws_port: a plugin reload in the same editor session adopts the
+## server the previous instance spawned, and must keep its token. Empty
+## when this editor never spawned a token-carrying server (dev servers,
+## fresh installs) — the handshake then omits the field.
+static var _ws_auth_token := ""
 
 ## Server-watch timer lives on the plugin because it's a Node — the
 ## manager is RefCounted and can't host children.
@@ -170,6 +174,9 @@ var _startup_trace_enabled := false
 var _startup_trace_start_ms := 0
 var _startup_trace_last_ms := 0
 var _startup_trace_counters: Dictionary = {}
+## Startup-path probes can now run on a worker thread (#678); the trace
+## counters they bump are shared with the main thread, so serialize.
+var _startup_trace_mutex := Mutex.new()
 var _startup_trace_netsh_start_count := 0
 
 
@@ -201,11 +208,24 @@ func _enter_tree() -> void:
 	ClientConfigurator.ensure_settings_registered()
 	_startup_trace_phase("settings_registered")
 
+	## #691: pre-warm the env snapshot on the main thread before any worker
+	## exists, so worker-thread env reads (dock refresh/action workers, the
+	## #678 startup walk's discovery worker) serve from the snapshot and can
+	## never race the spawn window's setenv/unsetenv around
+	## OS.create_process.
+	ClientConfigurator.warm_env_snapshot()
+
 	_log_buffer = LogBuffer.new()
 	## Apply the persisted dock "Log" toggle before anything logs through the
 	## buffer. Without this the choice only took effect after a manual toggle
 	## and reset to noisy on every editor restart (#626).
 	_log_buffer.enabled = McpSettings.mcp_logging_enabled()
+	## #678: in the real editor, run the startup path's blocking probes and
+	## kill-drain waits off the main thread so a contended port can't freeze
+	## plugin init/reload. Set here (not _init) so test fixtures — which
+	## extend this plugin but never enter the tree — keep the synchronous
+	## default and can call-then-assert.
+	_lifecycle.defer_blocking_work = true
 	_start_server()
 	_startup_trace_phase("server_start")
 
@@ -221,6 +241,16 @@ func _enter_tree() -> void:
 	_connection.log_buffer = _log_buffer
 	_connection.surfaced_error_tracker = _surfaced_error_tracker
 	_connection.ws_port = _resolved_ws_port
+	## Restore the token before the first connect: after an editor restart
+	## the static is empty but the managed-server record still names the
+	## token the running server was spawned with (#690). A fresh spawn later
+	## overwrites both via _set_ws_auth_token.
+	if _ws_auth_token.is_empty():
+		_ws_auth_token = str(_read_managed_server_record().get("ws_token", ""))
+	_connection.auth_token = _ws_auth_token
+	## Pause-depth restore boundary (#712): the dispatcher rebalances any
+	## pause_processing level a crashed handler leaked.
+	_dispatcher.pause_target = _connection
 	_connection.connect_blocked = _lifecycle.is_connection_blocked()
 	_connection.connect_block_reason = _lifecycle.get_status_dict().get("message", "")
 	if (
@@ -251,9 +281,9 @@ func _enter_tree() -> void:
 	var test_handler := TestHandler.new(get_undo_redo(), _log_buffer)
 	var batch_handler := BatchHandler.new(_dispatcher, get_undo_redo())
 	var ui_handler := UiHandler.new(get_undo_redo())
-	var theme_handler := ThemeHandler.new(get_undo_redo())
+	var theme_handler := ThemeHandler.new(get_undo_redo(), _connection)
 	var animation_handler := AnimationHandler.new(get_undo_redo())
-	var material_handler := MaterialHandler.new(get_undo_redo())
+	var material_handler := MaterialHandler.new(get_undo_redo(), _connection)
 	var particle_handler := ParticleHandler.new(get_undo_redo())
 	var camera_handler := CameraHandler.new(get_undo_redo())
 	var audio_handler := AudioHandler.new(get_undo_redo())
@@ -420,8 +450,8 @@ func _enter_tree() -> void:
 		_telemetry.record_dock_startup()
 		_flush_pending_self_update_telemetry()
 		_telemetry.flush_pending_plugin_reload()
-	var startup_path: String = str(_lifecycle.get_startup_path())
-	_startup_trace_finish(startup_path if not startup_path.is_empty() else "loaded")
+	## The startup-trace 'done' line is stamped by _start_server after the
+	## (possibly suspended) walk completes — not here (#682 review).
 
 
 ## Public wrapper around the dev-server-toggle telemetry emit. Lets the
@@ -664,7 +694,9 @@ func _startup_trace_begin() -> void:
 func _startup_trace_count(counter: String, amount: int = 1) -> void:
 	if not _startup_trace_enabled:
 		return
+	_startup_trace_mutex.lock()
 	_startup_trace_counters[counter] = int(_startup_trace_counters.get(counter, 0)) + amount
+	_startup_trace_mutex.unlock()
 
 
 func _startup_trace_phase(name: String) -> void:
@@ -682,17 +714,37 @@ func _startup_trace_finish(path: String) -> void:
 	if not _startup_trace_enabled:
 		return
 	var now := Time.get_ticks_msec()
+	## Same lock as _startup_trace_count — a worker probe may still be
+	## bumping counters while this reads/writes the shared dictionary.
+	_startup_trace_mutex.lock()
 	_startup_trace_counters["netsh"] = (
 		WindowsPortReservation.netsh_query_count() - _startup_trace_netsh_start_count
 	)
+	var counters_snapshot: Dictionary = _startup_trace_counters.duplicate()
+	_startup_trace_mutex.unlock()
 	print(
 		"MCP startup trace | done path=%s total_ms=%d counters=%s"
-		% [path, now - _startup_trace_start_ms, str(_startup_trace_counters)]
+		% [path, now - _startup_trace_start_ms, str(counters_snapshot)]
 	)
 
 
 func _start_server() -> void:
+	## Fire-and-forget: the walk is a coroutine in production (#678). Its
+	## completion continuation must NOT live in this method — a reload can
+	## free this plugin while the walk is suspended, and resuming a freed
+	## Node's coroutine errors out. The manager calls
+	## `_finish_startup_trace_after_walk` on walk completion instead,
+	## guarded by is_instance_valid.
 	_lifecycle.start_server()
+
+
+## Called by the lifecycle manager when the (possibly suspended) startup
+## walk completes — the point where the real startup outcome is known, so
+## the trace 'done' line reports the true contended-port path and duration
+## instead of a pre-walk placeholder (#682 review).
+func _finish_startup_trace_after_walk() -> void:
+	var startup_path: String = str(_lifecycle.get_startup_path())
+	_startup_trace_finish(startup_path if not startup_path.is_empty() else "loaded")
 
 
 ## Test-fixture shim — characterization tests in test_plugin_lifecycle
@@ -1107,13 +1159,20 @@ func _find_managed_pid(port: int) -> int:
 ## preserves the historical behavior for callers outside the spawn flow
 ## (`can_recover_incompatible_server`, the dock's UI buttons), where a
 ## fresh probe is the right thing.
-func _evaluate_strong_port_occupant_proof(port: int, live: Dictionary = {}) -> Dictionary:
+## `record_override`: a managed-server record snapshot the caller already
+## read. Non-empty skips the internal `_read_managed_server_record()` —
+## required when this helper runs on a worker thread (#678), because the
+## record lives in EditorSettings, which is main-thread-only. `{}` keeps
+## the historical read-it-here behavior for synchronous callers
+## (`_read_managed_server_record` never returns a bare `{}`, so the
+## sentinel is unambiguous).
+func _evaluate_strong_port_occupant_proof(port: int, live: Dictionary = {}, record_override: Dictionary = {}) -> Dictionary:
 	var result := {"proof": "", "pids": []}
 	var listener_pids := _find_all_pids_on_port(port)
 	if listener_pids.is_empty():
 		return result
 
-	var record := _read_managed_server_record()
+	var record: Dictionary = record_override if not record_override.is_empty() else _read_managed_server_record()
 	var record_pid := int(record.get("pid", 0))
 	var record_version := str(record.get("version", ""))
 
@@ -1141,16 +1200,33 @@ func _evaluate_strong_port_occupant_proof(port: int, live: Dictionary = {}) -> D
 		and not record_version.is_empty()
 		and str(current_live.get("version", "")) == record_version
 	):
-		return {"proof": "status_matches_record", "pids": listener_pids}
+		## Brand-check every listener before returning it as a kill target
+		## (#686): the /godot-ai/status match proves *a* godot-ai server owns
+		## the port, but `listener_pids` is a raw scrape that can include an
+		## unrelated process sharing the port number (e.g. a ::1-only
+		## listener lsof reports alongside our IPv4 one). The other two tiers
+		## brand-check every target (#525); this tier feeds the fully
+		## automatic start_server drift-kill path, so it must too.
+		var branded_listeners: Array[int] = []
+		for pid in listener_pids:
+			var listener_pid := int(pid)
+			if _pid_cmdline_is_godot_ai_for_proof(listener_pid):
+				branded_listeners.append(listener_pid)
+		if not branded_listeners.is_empty():
+			return {"proof": "status_matches_record", "pids": branded_listeners}
 
 	return result
 
 
-## See `_evaluate_strong_port_occupant_proof` for the `live` contract.
-## Threads `live` through the strong-proof delegate so neither helper
-## probes when the caller already knows the port-owner status.
-func _evaluate_recovery_port_occupant_proof(port: int, live: Dictionary = {}) -> Dictionary:
-	var proof := _evaluate_strong_port_occupant_proof(port, live)
+## See `_evaluate_strong_port_occupant_proof` for the `live` and
+## `record_override` contracts. Threads both through the strong-proof
+## delegate so neither helper probes when the caller already knows the
+## port-owner status, and so callers running this on a worker thread
+## (#712) can inject the EditorSettings record read on the main thread.
+func _evaluate_recovery_port_occupant_proof(
+	port: int, live: Dictionary = {}, record_override: Dictionary = {}
+) -> Dictionary:
+	var proof := _evaluate_strong_port_occupant_proof(port, live, record_override)
 	if not str(proof.get("proof", "")).is_empty():
 		return proof
 
@@ -1162,7 +1238,10 @@ func _evaluate_recovery_port_occupant_proof(port: int, live: Dictionary = {}) ->
 
 
 func _recover_strong_port_occupant(port: int, wait_s: float, pre_kill_live: Dictionary = {}) -> bool:
-	return _lifecycle.recover_strong_port_occupant(port, wait_s, pre_kill_live)
+	## `await` because the manager method is a coroutine in production
+	## (#678); with `defer_blocking_work` off it completes synchronously
+	## and this await is a pass-through.
+	return await _lifecycle.recover_strong_port_occupant(port, wait_s, pre_kill_live)
 
 
 func _legacy_pidfile_kill_targets(_port: int, listener_pids: Array[int]) -> Array[int]:
@@ -1434,7 +1513,7 @@ func _wait_for_port_free(port: int, timeout_s: float) -> void:
 func _read_managed_server_record() -> Dictionary:
 	var es := EditorInterface.get_editor_settings()
 	if es == null:
-		return {"pid": 0, "version": "", "ws_port": 0}
+		return {"pid": 0, "version": "", "ws_port": 0, "ws_token": ""}
 	var pid: int = 0
 	if es.has_setting(MANAGED_SERVER_PID_SETTING):
 		pid = int(es.get_setting(MANAGED_SERVER_PID_SETTING))
@@ -1444,7 +1523,10 @@ func _read_managed_server_record() -> Dictionary:
 	var ws_port: int = 0
 	if es.has_setting(MANAGED_SERVER_WS_PORT_SETTING):
 		ws_port = int(es.get_setting(MANAGED_SERVER_WS_PORT_SETTING))
-	return {"pid": pid, "version": version, "ws_port": ws_port}
+	var ws_token: String = ""
+	if es.has_setting(MANAGED_SERVER_WS_TOKEN_SETTING):
+		ws_token = str(es.get_setting(MANAGED_SERVER_WS_TOKEN_SETTING))
+	return {"pid": pid, "version": version, "ws_port": ws_port, "ws_token": ws_token}
 
 
 func _write_managed_server_record(pid: int, version: String) -> void:
@@ -1454,9 +1536,26 @@ func _write_managed_server_record(pid: int, version: String) -> void:
 	es.set_setting(MANAGED_SERVER_PID_SETTING, pid)
 	es.set_setting(MANAGED_SERVER_VERSION_SETTING, version)
 	es.set_setting(MANAGED_SERVER_WS_PORT_SETTING, _resolved_ws_port)
+	es.set_setting(MANAGED_SERVER_WS_TOKEN_SETTING, _ws_auth_token)
+
+
+## Keep the in-memory token, the connection's handshake field, and (via the
+## next _write_managed_server_record) the persisted record in one place so
+## the three can't drift. Empty token = "send no auth_token field".
+func _set_ws_auth_token(token: String) -> void:
+	_ws_auth_token = token
+	if _connection != null:
+		_connection.auth_token = token
 
 
 func _clear_managed_server_record() -> void:
+	## Drop the in-memory token together with the persisted one: a cleared
+	## record means "no managed server", and a surviving static would make
+	## the next handshake send a stale token — the exact present-but-wrong
+	## shape a newer spawned server rejects with 4003. (Runs before the
+	## es == null early return on purpose: the in-memory scrub must not
+	## depend on EditorSettings being available.)
+	_set_ws_auth_token("")
 	var es := EditorInterface.get_editor_settings()
 	if es == null:
 		return
@@ -1466,6 +1565,8 @@ func _clear_managed_server_record() -> void:
 		es.set_setting(MANAGED_SERVER_VERSION_SETTING, "")
 	if es.has_setting(MANAGED_SERVER_WS_PORT_SETTING):
 		es.set_setting(MANAGED_SERVER_WS_PORT_SETTING, 0)
+	if es.has_setting(MANAGED_SERVER_WS_TOKEN_SETTING):
+		es.set_setting(MANAGED_SERVER_WS_TOKEN_SETTING, "")
 
 
 func prepare_for_update_reload() -> void:
@@ -1547,7 +1648,11 @@ func _resume_connection_after_recovery() -> void:
 
 
 func recover_incompatible_server() -> bool:
-	if not _lifecycle.recover_incompatible_server():
+	## `await` because the manager's recovery is a coroutine in production
+	## (#678): `_resume_connection_after_recovery` gates on the post-walk
+	## state, so it must not run until the respawn walk has completed. With
+	## `defer_blocking_work` off this completes synchronously.
+	if not await _lifecycle.recover_incompatible_server():
 		return false
 	_resume_connection_after_recovery()
 	return true
@@ -1657,6 +1762,10 @@ func stop_dev_server() -> void:
 		# We have a managed server — use normal stop
 		_stop_server()
 		return
+	## A suspended startup walk holds pre-kill probe results; without this
+	## it can resume against the listener we are about to kill and adopt a
+	## dead server.
+	_lifecycle._invalidate_async_startup()
 	var port := ClientConfigurator.http_port()
 	var candidates: Array[int] = []
 	for pid in _find_all_pids_on_port(port):
@@ -1668,11 +1777,23 @@ func stop_dev_server() -> void:
 		print("MCP | stopped dev server on port %d" % port)
 
 
-func _kill_processes_and_windows_spawn_children(pids: Array[int]) -> Array[int]:
+## `verify_brand`: re-check `pid_alive` + the godot-ai cmdline brand
+## immediately before the kill (#686). Pass true when the proof that
+## nominated `pids` was evaluated in an earlier scheduling window (e.g.
+## `recover_strong_port_occupant`'s proof runs in one `_run_blocking` task
+## and the kill in a second, with main-thread frames in between) — a branded
+## target that exits in that gap can have its PID recycled to an innocent
+## process. Default false preserves the intentionally-unbranded call sites
+## (the dock's explicit-consent Restart button, orphan spawn workers whose
+## parent died so brand detection misses them).
+func _kill_processes_and_windows_spawn_children(pids: Array[int], verify_brand: bool = false) -> Array[int]:
 	var unique: Array[int] = []
 	for pid in pids:
-		if pid > 0 and not unique.has(pid):
-			unique.append(pid)
+		if pid <= 0 or unique.has(pid):
+			continue
+		if verify_brand and not (_pid_alive_for_proof(pid) and _pid_cmdline_is_godot_ai_for_proof(pid)):
+			continue
+		unique.append(pid)
 	if OS.get_name() == "Windows":
 		for child_pid in _find_windows_spawn_children(unique):
 			if not unique.has(child_pid):
@@ -1685,8 +1806,10 @@ func _kill_processes_and_windows_spawn_children(pids: Array[int]) -> Array[int]:
 			if exit_code == 0 or not _pid_alive(pid):
 				killed.append(pid)
 		else:
-			OS.kill(pid)
-			killed.append(pid)
+			## Mirror the Windows branch: only report the PID as killed if
+			## the kill succeeded or the process is verifiably gone.
+			if OS.kill(pid) == OK or not _pid_alive(pid):
+				killed.append(pid)
 	return killed
 
 

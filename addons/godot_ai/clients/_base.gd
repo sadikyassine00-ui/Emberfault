@@ -38,8 +38,7 @@ static func status_label(status: McpClient.Status) -> String:
 
 var id: String = ""                              ## stable key, e.g. "cursor"
 var display_name: String = ""                    ## "Cursor"
-var config_type: String = ""                     ## "json" | "toml" | "cli"
-var doc_url: String = ""
+var config_type: String = ""                     ## "json" | "toml" | "yaml" | "cli"
 
 # JSON / TOML clients ------------------------------------------------------
 ## {"darwin": "~/...", "windows": "$APPDATA/...", "linux": "$XDG_CONFIG_HOME/..."}
@@ -114,7 +113,7 @@ var config_home_env_subpath: String = ""
 var cli_names: PackedStringArray = PackedStringArray()
 ## Argument templates with `{name}` and `{url}` tokens; the strategy
 ## substitutes them at call time. Tokens are matched verbatim — no escaping
-## semantics, no shell expansion. Today only `claude_code` populates these.
+## semantics, no shell expansion. Populated by CLI descriptors (`claude_code`, `kimi_code`).
 var cli_register_template: PackedStringArray = PackedStringArray()
 var cli_unregister_template: PackedStringArray = PackedStringArray()
 ## Args run to read current state; stdout is scanned for the server name and
@@ -148,7 +147,9 @@ func resolved_config_path() -> String:
 func config_home_override() -> String:
 	if config_home_env.is_empty() or config_home_env_subpath.is_empty():
 		return ""
-	var home := OS.get_environment(config_home_env).strip_edges()
+	## env_lookup, not OS.get_environment: this runs on dock worker threads,
+	## which must not race the spawn window's setenv/unsetenv (#691).
+	var home := McpPathTemplate.env_lookup(config_home_env).strip_edges()
 	if home.is_empty():
 		return ""
 	# Expand a leading ~ so `CODEX_HOME=~/codex-alt` behaves like the shell.

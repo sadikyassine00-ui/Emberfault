@@ -1,14 +1,11 @@
 extends Node
 class_name SwarmSimulationProcessor
 
-@export_category("Core Bindings")
-@export var manager: HordeManager
-
 @export_category("Spatial Tuning")
 @export var separation_radius: float = 1.5
 @export var separation_force: float = 6.0
 
-@export_category("Liquid Horde Settings (Days Gone Style)")
+@export_category("Liquid Horde Settings")
 @export var cohesion_weight: float = 0.5
 @export var density_threshold: int = 3
 @export var momentum_charge_bonus: float = 0.03
@@ -18,9 +15,6 @@ class_name SwarmSimulationProcessor
 @export var orbit_speed_factor: float = 1.0
 ## AAA Time-Slicing Window: 12 frames means only ~8 entities raycast per frame!
 @export var raycast_frame_stride: int = 12
-
-@export_category("Core Assault Tuning")
-@export var max_core_attackers: int = 5
 
 @export_category("AAA Polish Settings")
 @export var steering_inertia: float = 7.5
@@ -39,32 +33,27 @@ class_name SwarmSimulationProcessor
 var ground_clamp_query: PhysicsRayQueryParameters3D
 var bucket_headers: PackedInt32Array = PackedInt32Array()
 var bucket_next: PackedInt32Array = PackedInt32Array()
+
+# ⚡ BITWISE OPTIMIZATION: Power-of-two mask replacing slow modulo division (%)
 const HASH_SIZE: int = 2048
+const HASH_MASK: int = 2047
 
 var promoted_mask: PackedByteArray = PackedByteArray()
-
-# Telemetry metrics
 var peak_frame_time_usec: float = 0.0
 
 func _ready() -> void:
 	ground_clamp_query = PhysicsRayQueryParameters3D.new()
-	ground_clamp_query.collision_mask = 1 # Lock exclusively to Layer 1 World Geometry
+	ground_clamp_query.collision_mask = 1
 	ground_clamp_query.collide_with_bodies = true
 	ground_clamp_query.collide_with_areas = false
 	bucket_headers.resize(HASH_SIZE)
 
-	if manager:
-		promoted_mask.resize(manager.pool_size)
-	else:
-		promoted_mask.resize(1000)
-
-func process_swarm_physics(_incoming_manager: HordeManager, delta: float) -> void:
-	if not manager or not manager.player or not manager.base_core:
+func process_swarm_physics(manager: Node, delta: float) -> void:
+	if not manager or not manager.player:
 		return
 
 	var loop_start_usec: float = Time.get_ticks_usec()
 	var player_pos: Vector3 = manager.player.global_position
-	var core_pos: Vector3 = manager.base_core.global_position
 	var space_state: PhysicsDirectSpaceState3D = manager.get_world_3d().direct_space_state
 
 	var live_count: int = manager.highest_active_index
@@ -84,98 +73,85 @@ func process_swarm_physics(_incoming_manager: HordeManager, delta: float) -> voi
 	var current_frame: int = Engine.get_process_frames()
 	var time_sec: float = Time.get_ticks_msec() / 1000.0
 
+	# ⚡ REGISTRY LOCALIZATION: Local references to skip dictionary overhead inside loops
+	var m_positions: PackedVector3Array = manager.positions
+	var m_velocities: PackedVector3Array = manager.velocities
+	var m_states: PackedByteArray = manager.states
+	var m_types: PackedInt32Array = manager.enemy_types
+	var m_variances: PackedFloat32Array = manager.speed_variances
+	var m_intents: PackedByteArray = manager.intents
+
 	if "node_pool" in manager:
 		for n in manager.node_pool:
 			if n.get("is_active") and n.get("linked_idx") != -1:
 				promoted_mask[n.linked_idx] = 1
 
-	var current_core_attackers: int = 0
+	# Cache the inverse transform once per frame to protect our 16.6ms budget
+	var mm_inv_xform := Transform3D()
+	if manager.multimesh:
+		mm_inv_xform = manager.multimesh.global_transform.affine_inverse()
 
-	# PASS 1: Build Spatial Grid Index Map
+	# Pre-calculate world wave times to eliminate 2,000+ sin/cos operations inside loops
+	var global_sin: float = sin(time_sec * 0.8)
+	var global_cos: float = cos(time_sec * 0.6)
+	var global_orbit_sin: float = sin(time_sec * 2.0)
+	var global_orbit_cos: float = cos(time_sec * 3.1)
+
+	# PASS 1: Build Spatial Grid Index Map (Optimized Bitwise Hash)
 	for i in range(live_count):
-		if manager.states[i] == 0: continue
-		var cell_x: int = int(floor(manager.positions[i].x / cell_size))
-		var cell_z: int = int(floor(manager.positions[i].z / cell_size))
-		var hash_idx: int = abs((cell_x * 73856093) ^ (cell_z * 19349663)) % HASH_SIZE
+		if m_states[i] == 0: continue
+		var cell_x: int = int(floor(m_positions[i].x / cell_size))
+		var cell_z: int = int(floor(m_positions[i].z / cell_size))
+		var hash_idx: int = abs((cell_x * 73856093) ^ (cell_z * 19349663)) & HASH_MASK
 		bucket_next[i] = bucket_headers[hash_idx]
 		bucket_headers[hash_idx] = i
 
 	# PASS 2: Fluid Kinematics Processing Loop
 	for i in range(live_count):
-		if manager.states[i] == 0: continue
+		if m_states[i] == 0: continue
 
 		if promoted_mask[i] == 1:
-			manager.multimesh.multimesh.set_instance_transform(i, Transform3D(Basis(), Vector3(0, -1000, 0)))
+			var local_zero: Transform3D = mm_inv_xform * Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -1000, 0))
+			manager.multimesh.multimesh.set_instance_transform(i, local_zero)
 			continue
 
-		var current_pos: Vector3 = manager.positions[i]
-		var target_height_cache: float = manager.velocities[i].y # Repurposing velocity.y as height cache
-		var velocity_vec: Vector3 = manager.velocities[i]
-		velocity_vec.y = 0.0 # Strip height cache away from horizontal velocity vector math
+		var current_pos: Vector3 = m_positions[i]
+		var target_height_cache: float = m_velocities[i].y
+		var velocity_vec: Vector3 = m_velocities[i]
+		velocity_vec.y = 0.0
 
-		var type: int = manager.enemy_types[i]
+		var type: int = m_types[i]
 
-		# --- 🛡️ INITIALIZATION GUARD LAYER ---
-		# Prevents newly spawned/demoted entities from diving to 0.0 before their raycast frame hits
 		if target_height_cache == 0.0:
-			var initial_offset: float = ground_offset if type != 2 else (ground_offset * 2.0)
-			target_height_cache = current_pos.y + initial_offset
-		# -------------------------------------
+			target_height_cache = current_pos.y + ground_offset
 
-		var is_hunter: bool = manager.intents[i] == 0
-		var target_pos: Vector3 = player_pos if is_hunter else core_pos
+		var target_pos: Vector3 = player_pos
 
 		var to_target := Vector3(target_pos.x - current_pos.x, 0.0, target_pos.z - current_pos.z)
 		var dist_sq: float = to_target.length_squared()
 		var distance := sqrt(dist_sq)
 
 		var desired_heading := Vector3.ZERO
-		var base_move_speed: float = manager.base_speed * manager.speed_variances[i]
-		if type == 2:
-			base_move_speed *= 0.45
+		var base_move_speed: float = manager.base_speed * m_variances[i]
 
-		var slow_noise_x: float = sin(time_sec * 0.8 + i * 2.3) * 0.25
-		var slow_noise_z: float = cos(time_sec * 0.6 + i * 3.1) * 0.25
+		var slow_noise_x: float = global_sin * (0.25 + 0.05 * (i & 3))
+		var slow_noise_z: float = global_cos * (0.25 - 0.05 * (i & 3))
 		var wander_vec := Vector3(slow_noise_x, 0, slow_noise_z)
 
 		if distance > 0.1:
 			var dir_to_target := to_target / distance
 
-			if is_hunter and distance <= staging_radius:
+			if distance <= staging_radius:
 				var orbit_dir := Vector3.UP.cross(dir_to_target).normalized()
-				if i % 2 == 0: orbit_dir = - orbit_dir
-				var shuffle_noise := Vector3(sin(time_sec * 2.0 + i), 0.0, cos(time_sec * 3.1 + i)).normalized() * 0.4
+				if i & 1 == 0: orbit_dir = - orbit_dir
+
+				var shuffle_noise := Vector3(global_orbit_sin * (0.3 + 0.1 * (i & 1)), 0.0, global_orbit_cos * (0.3 + 0.1 * (i & 1)))
 				var push_out_weight: float = (staging_radius - distance) / staging_radius
 				var push_out_vec := -dir_to_target * (base_move_speed * push_out_weight * 1.5)
 
 				desired_heading = (orbit_dir * base_move_speed * orbit_speed_factor) + (shuffle_noise * base_move_speed) + push_out_vec
 			else:
-				var unique_hash: float = sin(float(i) * 12.9898) * 43758.5453
-				var deterministic_noise: float = abs(unique_hash - floor(unique_hash))
-
-				var strike_range: float = 2.0 if type != 2 else 3.5
-				var personal_wait_perimeter: float = 4.5 + (deterministic_noise * crowd_belt_thickness)
-
-				if not is_hunter and distance <= personal_wait_perimeter:
-					if distance <= strike_range + 1.0 and current_core_attackers < max_core_attackers:
-						current_core_attackers += 1
-						desired_heading = (wander_vec * base_move_speed * 0.5) + (dir_to_target * base_move_speed * 0.2)
-
-						if current_frame % 60 == 0 and manager.has_method("apply_core_damage"):
-							manager.apply_core_damage(0.5 * manager.speed_variances[i])
-					else:
-						var depth: float = personal_wait_perimeter - distance
-						var push_back_factor: float = clamp(depth / 3.0, 0.0, 2.0)
-
-						var orbit_dir := Vector3.UP.cross(dir_to_target).normalized()
-						if i % 2 == 0: orbit_dir = - orbit_dir
-
-						var fallback_orbit: Vector3 = orbit_dir * base_move_speed * 0.6
-						var gradient_repulsion: Vector3 = - dir_to_target * base_move_speed * push_back_factor * 0.8
-
-						desired_heading = fallback_orbit + gradient_repulsion + (wander_vec * base_move_speed * 0.3)
-				else:
-					desired_heading = dir_to_target * base_move_speed
+				desired_heading = dir_to_target * base_move_speed
 
 		# Spatial Neighbor Scans
 		var cell_x: int = int(floor(current_pos.x / cell_size))
@@ -195,15 +171,14 @@ func process_swarm_physics(_incoming_manager: HordeManager, delta: float) -> voi
 			for dz in range(-1, 2):
 				var target_cell_x := cell_x + dx
 				var target_cell_z := cell_z + dz
-				var hash_idx: int = abs((target_cell_x * 73856093) ^ (target_cell_z * 19349663)) % HASH_SIZE
+				var hash_idx: int = abs((target_cell_x * 73856093) ^ (target_cell_z * 19349663)) & HASH_MASK
 
 				var neighbor_idx: int = bucket_headers[hash_idx]
 				while neighbor_idx != -1:
-					if neighbor_idx != i and manager.states[neighbor_idx] != 0:
-						var neighbor_pos: Vector3 = manager.positions[neighbor_idx]
+					if neighbor_idx != i and m_states[neighbor_idx] != 0:
+						var neighbor_pos: Vector3 = m_positions[neighbor_idx]
 						var to_neighbor_flat := Vector3(current_pos.x - neighbor_pos.x, 0.0, current_pos.z - neighbor_pos.z)
 						var neighbor_dist_sq: float = to_neighbor_flat.length_squared()
-						var neighbor_type: int = manager.enemy_types[neighbor_idx]
 
 						total_density_count += 1
 						neighbor_center_mass += neighbor_pos
@@ -212,11 +187,7 @@ func process_swarm_physics(_incoming_manager: HordeManager, delta: float) -> voi
 						var active_sep_radius: float = separation_radius * separation_modifier
 						var active_body_radius: float = swarmer_body_radius * separation_modifier
 
-						if type == 2 or neighbor_type == 2:
-							active_sep_radius *= 2.2
-							active_body_radius *= 1.8
-
-						var pairing_variance: float = 1.0 + (sin(float(i ^ neighbor_idx) * 57.2) * 0.10)
+						var pairing_variance: float = 1.0 + (float((i ^ neighbor_idx) & 15) * 0.01) - 0.08
 						var active_sep_rad_sq: float = (active_sep_radius * active_sep_radius) * pairing_variance
 
 						if neighbor_dist_sq < active_sep_rad_sq and neighbor_dist_sq > 0.001:
@@ -258,44 +229,56 @@ func process_swarm_physics(_incoming_manager: HordeManager, delta: float) -> voi
 		current_pos.x += velocity_vec.x * delta
 		current_pos.z += velocity_vec.z * delta
 
-		# --- 🌊 SUBSYSTEM 3: AMORTIZED STEP-GLIDER INTERPOLATION ENGINE ---
-		var active_offset: float = ground_offset if type != 2 else (ground_offset * 2.0)
+		# --- 🌊 DYNAMIC TIME-SLICED STEP-GLIDER ENGINE ---
+		var active_offset: float = ground_offset
 
-		# Time-Sliced Raycast Gate: Only updates height targets for a microscopic pool fraction per frame
-		if (i + current_frame) % raycast_frame_stride == 0:
-			# Cast explicitly relative to the swarmer's current horizontal position coordinates
-			ground_clamp_query.from = Vector3(current_pos.x, current_pos.y + 12.0, current_pos.z)
-			ground_clamp_query.to = Vector3(current_pos.x, current_pos.y - 12.0, current_pos.z)
+		var dynamic_stride: int = raycast_frame_stride
+		if distance > 22.0:
+			dynamic_stride = raycast_frame_stride * 3
+		elif distance > 14.5:
+			dynamic_stride = raycast_frame_stride * 2
 
-			var clamp_result: Dictionary = space_state.intersect_ray(ground_clamp_query)
-			if not clamp_result.is_empty():
-				target_height_cache = clamp_result.position.y + active_offset
+		if (i + current_frame) % dynamic_stride == 0:
+			if manager.voxel_tool:
+				target_height_cache = manager.get_voxel_ground_height(manager.voxel_tool, current_pos.x, current_pos.y, current_pos.z, active_offset)
 			else:
-				target_height_cache = target_pos.y + active_offset
+				ground_clamp_query.from = Vector3(current_pos.x, player_pos.y + 30.0, current_pos.z)
+				ground_clamp_query.to = Vector3(current_pos.x, player_pos.y - 30.0, current_pos.z)
 
-		# EVERY SINGLE FRAME: Smoothly glide up or down toward the cached height step target
-		current_pos.y = move_toward(current_pos.y, target_height_cache, 18.0 * delta)
+				var clamp_result: Dictionary = space_state.intersect_ray(ground_clamp_query)
+				if not clamp_result.is_empty():
+					target_height_cache = clamp_result.position.y + active_offset
+				else:
+					target_height_cache = current_pos.y
 
-		# Write-back synchronization
-		manager.positions[i] = current_pos
+		current_pos.y = move_toward(current_pos.y, target_height_cache, 24.0 * delta)
 
-		# Pack the horizontal movement vectors AND the target height cache back into database memory lanes
+		m_positions[i] = current_pos
 		velocity_vec.y = target_height_cache
-		manager.velocities[i] = velocity_vec
+		m_velocities[i] = velocity_vec
 
-		# GPU Transformation Builder
+		# --- ⚡ GPU TRANSFORMATION BUILDER (Facing Correction + MultiMesh Scaling) ---
 		var basis := Basis()
 		var flat_vel := Vector3(velocity_vec.x, 0.0, velocity_vec.z)
 		if flat_vel.length_squared() > 0.05:
-			var forward: Vector3 = flat_vel.normalized()
-			var right: Vector3 = Vector3.UP.cross(forward).normalized()
-			var up: Vector3 = forward.cross(right).normalized()
-			basis = Basis(right, up, forward)
+			# local -Z forward alignment fix
+			var back_dir: Vector3 = - flat_vel.normalized()
+			var right: Vector3 = Vector3.UP.cross(back_dir).normalized()
+			var up: Vector3 = back_dir.cross(right).normalized()
+			basis = Basis(right, up, back_dir)
 
-		if type == 2:
-			basis = basis.scaled(Vector3(2.2, 2.2, 2.2))
+		# Inject scale factor directly into the transformation basis
+		var scale_val: float = manager.enemy_scale
+		basis = basis.scaled(Vector3(scale_val, scale_val, scale_val))
 
-		manager.multimesh.multimesh.set_instance_transform(i, Transform3D(basis, current_pos))
+		# Convert coordinates to MultiMesh Local Space
+		var world_xform := Transform3D(basis, current_pos)
+		var local_xform: Transform3D = mm_inv_xform * world_xform
+		manager.multimesh.multimesh.set_instance_transform(i, local_xform)
+
+	# Write packed registry back to main thread registers
+	manager.positions = m_positions
+	manager.velocities = m_velocities
 
 	manager.multimesh.multimesh.visible_instance_count = manager.highest_active_index
 
@@ -303,4 +286,4 @@ func process_swarm_physics(_incoming_manager: HordeManager, delta: float) -> voi
 	peak_frame_time_usec = max(peak_frame_time_usec, total_duration_usec)
 
 	if current_frame % 60 == 0:
-		print("⚡ [STEP GLIDER ACTIVE] Entities: %d | Frame Loop: %.3f ms | HISTORICAL PEAK: %.3f ms" % [manager.alive_count, total_duration_usec / 1000.0, peak_frame_time_usec / 1000.0])
+		print("⚡ [STEP GLIDER OPTIMIZED] Entities: %d | Frame Loop: %.3f ms | HISTORICAL PEAK: %.3f ms" % [manager.alive_count, total_duration_usec / 1000.0, peak_frame_time_usec / 1000.0])

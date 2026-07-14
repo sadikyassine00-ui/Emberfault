@@ -371,13 +371,38 @@ static func _apply_resource_properties(res: Resource, properties: Dictionary, de
 					return nested_err
 			v = sub_res
 		else:
-			v = NodeHandler._coerce_value(v, target_type)
-			## Mirror set_property's coerce check: wrong-shape dicts (#123) and
-			## non-dict inputs that don't land as the target compound Variant
-			## (#191) both error here instead of writing zero-filled Variants.
-			var coerce_err := NodeHandler._check_coerced(v, target_type, "Property '%s'" % key)
-			if coerce_err != null:
-				return coerce_err
+			var slot_value: Variant = res.get(key)
+			if target_type == TYPE_ARRAY and slot_value is Array and (slot_value as Array).is_typed():
+				## Typed Array[T] slot (#612): mirror set_property's dispatch —
+				## the generic passthrough would hand an untyped Array to the
+				## typed setter, which drops it silently while we report success.
+				var typed_out: Variant = NodeHandler._coerce_typed_array(
+					v, slot_value, "Property '%s'" % key
+				)
+				if typed_out is Dictionary:
+					return typed_out
+				v = typed_out
+			elif (
+				target_type == TYPE_DICTIONARY
+				and slot_value is Dictionary
+				and (slot_value as Dictionary).is_typed()
+			):
+				## Typed Dictionary[K, V] slot (#612 stage 3): success is a
+				## typed duplicate of the slot; the error envelope is untyped.
+				var typed_dict_out: Dictionary = NodeHandler._coerce_typed_dictionary(
+					v, slot_value, "Property '%s'" % key
+				)
+				if not typed_dict_out.is_typed():
+					return typed_dict_out
+				v = typed_dict_out
+			else:
+				v = NodeHandler._coerce_value(v, target_type)
+				## Mirror set_property's coerce check: wrong-shape dicts (#123) and
+				## non-dict inputs that don't land as the target compound Variant
+				## (#191) both error here instead of writing zero-filled Variants.
+				var coerce_err := NodeHandler._check_coerced(v, target_type, "Property '%s'" % key)
+				if coerce_err != null:
+					return coerce_err
 		res.set(key, v)
 	return null
 
@@ -399,7 +424,7 @@ func _assign_created_resource(res: Resource, type_str: String, node_path: String
 	if not found:
 		return ErrorCodes.make(
 			ErrorCodes.PROPERTY_NOT_ON_CLASS,
-			"Property '%s' not found on %s" % [property, node.get_class()]
+			McpPropertyErrors.build_message(node, property)
 		)
 	if prop_type != TYPE_NIL and prop_type != TYPE_OBJECT:
 		return ErrorCodes.make(
