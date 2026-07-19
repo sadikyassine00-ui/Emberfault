@@ -23,7 +23,7 @@ func take_damage(payload: DamagePayload) -> void:
 	health_changed.emit(current_health, max_health)
 	damage_received.emit(payload)
 
-	print("❤️ [%s] Hit! Damage: %f | Remaining Health: %f" % [get_parent().name, final_damage, current_health])
+	#print("❤️ [%s] Hit! Damage: %f | Remaining Health: %f" % [get_parent().name, final_damage, current_health])
 
 	if current_health <= 0.0:
 		entity_died.emit()
@@ -35,3 +35,4 @@ func take_damage(payload: DamagePayload) -> void:
 		get_tree().create_timer(iframe_duration, true, false, false).timeout.connect(func():
 			is_invulnerable = false
 		)
+

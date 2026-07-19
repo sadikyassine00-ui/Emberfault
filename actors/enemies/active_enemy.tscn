@@ -64,7 +64,6 @@ mesh = SubResource("ArrayMesh_x5ktk")
 
 [node name="HealthComponent" type="Node3D" parent="." unique_id=23916842]
 script = ExtResource("2_sukvk")
-is_invulnerable = true
 iframe_duration = 0.0
 
 [node name="CombatHitbox" type="Area3D" parent="." unique_id=863865072]

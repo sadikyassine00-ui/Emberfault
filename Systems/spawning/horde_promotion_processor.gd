@@ -9,16 +9,23 @@ class_name HordePromotionProcessor
 @export var core_straggler_distance: float = 45.0
 @export var core_wrap_spawn_radius: float = 26.0
 
-func process_promotions(manager: Node) -> void:
+# AAA Memory Architecture: Permanent pre-allocated registers
+var promoted_indices: PackedInt32Array = PackedInt32Array()
+var promoted_distances_sq: PackedFloat32Array = PackedFloat32Array()
+
+var unpromoted_candidates: PackedInt32Array = PackedInt32Array()
+var unpromoted_distances_sq: PackedFloat32Array = PackedFloat32Array()
+
+func process_promotions(manager: HordeManager) -> void:
 	var player_node: Node3D = manager.player
 	if not player_node:
 		return
 		
 	var player_pos: Vector3 = player_node.global_position
-	var p_flat := Vector2(player_pos.x, player_pos.z)
+	var p_flat: Vector2 = Vector2(player_pos.x, player_pos.z)
 	
 	var core_node: Node3D = manager.core_node
-	var core_pos := Vector3.ZERO
+	var core_pos: Vector3 = Vector3.ZERO
 	var has_core: bool = false
 	if core_node:
 		core_pos = core_node.global_position
@@ -30,94 +37,105 @@ func process_promotions(manager: Node) -> void:
 	var straggler_sq: float = straggler_distance * straggler_distance
 	var core_straggler_sq: float = core_straggler_distance * core_straggler_distance
 
-	# Calculate active running direction
 	var player_vel: Vector3 = player_node.get("velocity") if "velocity" in player_node else Vector3.ZERO
-	var heading_dir := Vector3.ZERO
+	var heading_dir: Vector3 = Vector3.ZERO
 	
 	if player_vel.length_squared() > 0.1:
 		heading_dir = player_vel.normalized()
 	else:
 		heading_dir = - player_node.global_transform.basis.z.normalized()
 		
-	var heading_flat := Vector2(heading_dir.x, heading_dir.z).normalized()
+	var heading_flat: Vector2 = Vector2(heading_dir.x, heading_dir.z).normalized()
 
-	var mm_inv_xform := Transform3D()
+	var mm_inv_xform: Transform3D = Transform3D()
 	if manager.multimesh:
 		mm_inv_xform = manager.multimesh.global_transform.affine_inverse()
 
-	var promoted_indices: PackedInt32Array = PackedInt32Array()
-	var promoted_distances_sq: PackedFloat32Array = PackedFloat32Array()
-	
-	var unpromoted_candidates: PackedInt32Array = PackedInt32Array()
-	var unpromoted_distances_sq: PackedFloat32Array = PackedFloat32Array()
+	# Sized Once: Grow capacity up to target index boundary to prevent mid-run resizing
+	var current_pool_capacity: int = manager.highest_active_index
+	if promoted_indices.size() < current_pool_capacity:
+		promoted_indices.resize(current_pool_capacity)
+		promoted_distances_sq.resize(current_pool_capacity)
+		unpromoted_candidates.resize(current_pool_capacity)
+		unpromoted_distances_sq.resize(current_pool_capacity)
 
-	# ⚡ PROMOTION THROTTLING REGISTER: Caps Node activations to prevent CPU frame spikes
+	# Virtual Clear: Reset counting registers to reuse allocated memory blocks safely
+	var promoted_count: int = 0
+	var unpromoted_count: int = 0
+
 	var promotions_this_frame: int = 0
 	const MAX_PROMOTIONS_PER_FRAME: int = 2
 
 	# PASS 1: Single-pass gather, coordinate sync, and targeted wrap projections
 	for i in range(manager.highest_active_index):
-		if manager.states[i] == 0:
+		var state: int = manager.states[i]
+		if state == 0:
 			continue # Dead
 
-		var current_pos: Vector3 = manager.positions[i]
-		var dist_to_player_sq: float = current_pos.distance_squared_to(player_pos)
+		var current_pos: Vector3
+		var dist_to_player_sq: float
+
+		if state == 2:
+			var n: ActiveEnemy = manager.index_to_node_map[i]
+			if n:
+				current_pos = n.global_position
+				manager.set_enemy_pos_vel(i, current_pos, manager.velocities[i])
+			else:
+				manager.set_enemy_state(i, 1) # Fallback recovery
+				state = 1
+				current_pos = manager.positions[i]
+		else:
+			current_pos = manager.positions[i]
+
+		dist_to_player_sq = current_pos.distance_squared_to(player_pos)
+		
 		var type: int = manager.enemy_types[i]
 
-		if manager.states[i] == 1:
+		if state == 1:
 			if type == 1:
 				if dist_to_player_sq > straggler_sq:
 					var angle_offset: float = randf_range(-PI / 4.0, PI / 4.0)
-					var spawn_dir_2d := heading_flat.rotated(angle_offset)
+					var spawn_dir_2d: Vector2 = heading_flat.rotated(angle_offset)
 					var new_flat_pos: Vector2 = p_flat + (spawn_dir_2d * wrap_spawn_radius)
-					manager.set_enemy_pos_vel(i, Vector3(new_flat_pos.x, player_pos.y, new_flat_pos.y), Vector3.ZERO)
-					current_pos = manager.positions[i]
+					current_pos = Vector3(new_flat_pos.x, player_pos.y, new_flat_pos.y)
+					manager.set_enemy_pos_vel(i, current_pos, Vector3.ZERO)
 					dist_to_player_sq = current_pos.distance_squared_to(player_pos)
 			else:
 				if has_core:
 					var dist_to_core_sq: float = current_pos.distance_squared_to(core_pos)
 					if dist_to_core_sq > core_straggler_sq:
 						var random_angle: float = randf_range(-PI, PI)
-						var new_pos := core_pos + Vector3(cos(random_angle), 0.0, sin(random_angle)) * core_wrap_spawn_radius
-						manager.set_enemy_pos_vel(i, new_pos, Vector3.ZERO)
-						current_pos = manager.positions[i]
+						current_pos = core_pos + Vector3(cos(random_angle), 0.0, sin(random_angle)) * core_wrap_spawn_radius
+						manager.set_enemy_pos_vel(i, current_pos, Vector3.ZERO)
 						dist_to_player_sq = current_pos.distance_squared_to(player_pos)
 				else:
 					if dist_to_player_sq > straggler_sq:
 						var angle_offset: float = randf_range(-PI / 4.0, PI / 4.0)
-						var spawn_dir_2d := heading_flat.rotated(angle_offset)
-						var new_flat_pos := p_flat + (spawn_dir_2d * wrap_spawn_radius)
-						manager.set_enemy_pos_vel(i, Vector3(new_flat_pos.x, player_pos.y, new_flat_pos.y), Vector3.ZERO)
-						current_pos = manager.positions[i]
+						var spawn_dir_2d: Vector2 = heading_flat.rotated(angle_offset)
+						var new_flat_pos: Vector2 = p_flat + (spawn_dir_2d * wrap_spawn_radius)
+						current_pos = Vector3(new_flat_pos.x, player_pos.y, new_flat_pos.y)
+						manager.set_enemy_pos_vel(i, current_pos, Vector3.ZERO)
 						dist_to_player_sq = current_pos.distance_squared_to(player_pos)
 
-		# Categorization & Sync
-		if manager.states[i] == 2:
-			var n = manager._find_node_for_idx(i)
-			if n:
-				manager.set_enemy_pos_vel(i, n.global_position, manager.velocities[i])
-				current_pos = n.global_position
-				dist_to_player_sq = current_pos.distance_squared_to(player_pos)
-				
-				promoted_indices.append(i)
-				promoted_distances_sq.append(dist_to_player_sq)
-			else:
-				manager.set_enemy_state(i, 1) # Fallback recovery
-				
-		elif manager.states[i] == 1:
+		if state == 2:
+			promoted_indices[promoted_count] = i
+			promoted_distances_sq[promoted_count] = dist_to_player_sq
+			promoted_count += 1
+		elif state == 1:
 			if dist_to_player_sq < promote_sq:
-				unpromoted_candidates.append(i)
-				unpromoted_distances_sq.append(dist_to_player_sq)
+				unpromoted_candidates[unpromoted_count] = i
+				unpromoted_distances_sq[unpromoted_count] = dist_to_player_sq
+				unpromoted_count += 1
 
 	# PASS 2: Demote active wrappers that walked beyond demote_dist
-	var write_idx := 0
-	for idx in range(promoted_indices.size()):
+	var write_idx: int = 0
+	for idx in range(promoted_count):
 		var p_i: int = promoted_indices[idx]
 		var dist_sq: float = promoted_distances_sq[idx]
 		
 		if dist_sq > demote_sq:
 			manager.set_enemy_state(p_i, 1)
-			var n = manager._find_node_for_idx(p_i)
+			var n: ActiveEnemy = manager.index_to_node_map[p_i]
 			if n:
 				manager.set_enemy_pos_vel(p_i, n.global_position, manager.velocities[p_i])
 				if manager.multimesh and manager.multimesh.multimesh:
@@ -129,19 +147,17 @@ func process_promotions(manager: Node) -> void:
 			promoted_distances_sq[write_idx] = dist_sq
 			write_idx += 1
 			
-	promoted_indices.resize(write_idx)
-	promoted_distances_sq.resize(write_idx)
+	promoted_count = write_idx
 
 	# PASS 3: Fill empty node wrappers (With Throttling)
-	var free_node = manager._get_free_node()
-	while free_node and unpromoted_candidates.size() > 0:
-		# ⚡ APPLY THROTTLE: Stop promoting if we hit our frame quota limit
+	var free_node: ActiveEnemy = manager._get_free_node()
+	while free_node and unpromoted_count > 0:
 		if promotions_this_frame >= MAX_PROMOTIONS_PER_FRAME:
 			break
 			
-		var min_idx := 0
-		var min_val := unpromoted_distances_sq[0]
-		for idx in range(1, unpromoted_distances_sq.size()):
+		var min_idx: int = 0
+		var min_val: float = unpromoted_distances_sq[0]
+		for idx in range(1, unpromoted_count):
 			if unpromoted_distances_sq[idx] < min_val:
 				min_val = unpromoted_distances_sq[idx]
 				min_idx = idx
@@ -156,35 +172,36 @@ func process_promotions(manager: Node) -> void:
 		free_node.activate(manager.positions[target_i], target_i, target_node, manager.speed_variances[target_i], manager.preferred_distances_sq[target_i], manager.orbital_speeds[target_i], manager)
 		
 		if manager.multimesh and manager.multimesh.multimesh:
-			var local_zero: Transform3D = mm_inv_xform * Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -1000, 0))
+			var local_zero: Transform3D = mm_inv_xform * Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0.0, -1000.0, 0.0))
 			manager.multimesh.multimesh.set_instance_transform(target_i, local_zero)
 			
-		promoted_indices.append(target_i)
-		promoted_distances_sq.append(min_val)
+		promoted_indices[promoted_count] = target_i
+		promoted_distances_sq[promoted_count] = min_val
+		promoted_count += 1
 		
-		unpromoted_candidates.remove_at(min_idx)
-		unpromoted_distances_sq.remove_at(min_idx)
+		# O(1) Fast Swap: Replaces expensive remove_at() memory shifting mechanics
+		unpromoted_candidates[min_idx] = unpromoted_candidates[unpromoted_count - 1]
+		unpromoted_distances_sq[min_idx] = unpromoted_distances_sq[unpromoted_count - 1]
+		unpromoted_count -= 1
 		
-		# Increment throttle register
 		promotions_this_frame += 1
 		free_node = manager._get_free_node()
 
 	# PASS 4: Direct Swapping (With Throttling)
-	while unpromoted_candidates.size() > 0 and promoted_indices.size() > 0:
-		# ⚡ APPLY THROTTLE: Cap frame workload
+	while unpromoted_count > 0 and promoted_count > 0:
 		if promotions_this_frame >= MAX_PROMOTIONS_PER_FRAME:
 			break
 			
-		var min_un_idx := 0
-		var min_un_val := unpromoted_distances_sq[0]
-		for idx in range(1, unpromoted_distances_sq.size()):
+		var min_un_idx: int = 0
+		var min_un_val: float = unpromoted_distances_sq[0]
+		for idx in range(1, unpromoted_count):
 			if unpromoted_distances_sq[idx] < min_un_val:
 				min_un_val = unpromoted_distances_sq[idx]
 				min_un_idx = idx
 				
-		var max_prom_idx := 0
-		var max_prom_val := promoted_distances_sq[0]
-		for idx in range(1, promoted_distances_sq.size()):
+		var max_prom_idx: int = 0
+		var max_prom_val: float = promoted_distances_sq[0]
+		for idx in range(1, promoted_count):
 			if promoted_distances_sq[idx] > max_prom_val:
 				max_prom_val = promoted_distances_sq[idx]
 				max_prom_idx = idx
@@ -193,9 +210,8 @@ func process_promotions(manager: Node) -> void:
 			var target_to_promote: int = unpromoted_candidates[min_un_idx]
 			var target_to_demote: int = promoted_indices[max_prom_idx]
 			
-			var n = manager._find_node_for_idx(target_to_demote)
+			var n: ActiveEnemy = manager.index_to_node_map[target_to_demote]
 			if n:
-				# 1. Demote the far-away wrapper
 				manager.set_enemy_state(target_to_demote, 1)
 				manager.set_enemy_pos_vel(target_to_demote, n.global_position, manager.velocities[target_to_demote])
 				
@@ -204,7 +220,6 @@ func process_promotions(manager: Node) -> void:
 					manager.multimesh.multimesh.set_instance_transform(target_to_demote, local_tf)
 				n.deactivate()
 				
-				# 2. Promote the closer unit
 				manager.set_enemy_state(target_to_promote, 2)
 				
 				var target_node: Node3D = player_node
@@ -214,16 +229,17 @@ func process_promotions(manager: Node) -> void:
 				n.activate(manager.positions[target_to_promote], target_to_promote, target_node, manager.speed_variances[target_to_promote], manager.preferred_distances_sq[target_to_promote], manager.orbital_speeds[target_to_promote], manager)
 				
 				if manager.multimesh and manager.multimesh.multimesh:
-					var local_zero: Transform3D = mm_inv_xform * Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -1000, 0))
+					var local_zero: Transform3D = mm_inv_xform * Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0.0, -1000.0, 0.0))
 					manager.multimesh.multimesh.set_instance_transform(target_to_promote, local_zero)
 					
 			promoted_indices[max_prom_idx] = target_to_promote
 			promoted_distances_sq[max_prom_idx] = min_un_val
 			
-			unpromoted_candidates.remove_at(min_un_idx)
-			unpromoted_distances_sq.remove_at(min_un_idx)
+			# O(1) Fast Swap out the processed candidate
+			unpromoted_candidates[min_un_idx] = unpromoted_candidates[unpromoted_count - 1]
+			unpromoted_distances_sq[min_un_idx] = unpromoted_distances_sq[unpromoted_count - 1]
+			unpromoted_count -= 1
 			
-			# Increment throttle register
 			promotions_this_frame += 1
 		else:
 			break

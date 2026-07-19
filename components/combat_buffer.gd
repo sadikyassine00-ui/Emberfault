@@ -52,13 +52,14 @@ func start_attack() -> void:
 	if is_attacking:
 		if can_buffer:
 			if can_instant_cancel:
-				print("⚡ [INSTANT CANCEL] Recovery broken early. Advancing combo chain sequence.")
+				#print("⚡ [INSTANT CANCEL] Recovery broken early. Advancing combo chain sequence.")
 				_execute_combo_chain()
 			else:
 				combo_buffered = true
-				print("   📥 [BUFFERED] Input queued for active step: %d" % combo_step)
+				#print("   📥 [BUFFERED] Input queued for active step: %d" % combo_step)
 		else:
-			print("   ❌ [IGNORED] Input rejected. Player in early swing wind-up.")
+			#print("   ❌ [IGNORED] Input rejected. Player in early swing wind-up.")
+			pass
 		return
 
 	runtime_sequence_id += 1
@@ -88,7 +89,7 @@ func start_attack() -> void:
 			current_eval_delay = 0.283
 			current_total_duration = 0.500
 
-	print("⚔️ [TRIGGERED] CombatBuffer.start_attack() -> Executing: %s | Gen: %d | Step: %d" % [target_anim, current_sequence_generation, combo_step])
+	#print("⚔️ [TRIGGERED] CombatBuffer.start_attack() -> Executing: %s | Gen: %d | Step: %d" % [target_anim, current_sequence_generation, combo_step])
 
 	var target_pos = get_mouse_world_position()
 	var corrected_target = parent.global_position + (parent.global_position - target_pos)
@@ -103,7 +104,7 @@ func start_attack() -> void:
 		get_tree().create_timer(active_strike_delay, true, false, false).timeout.connect(func():
 			if runtime_sequence_id != current_sequence_generation: return
 			can_buffer = true
-			print("   🔓 [BUFFER WINDOW OPENED] Input registration active for Gen: %d" % current_sequence_generation)
+			#print("   🔓 [BUFFER WINDOW OPENED] Input registration active for Gen: %d" % current_sequence_generation)
 		)
 
 		get_tree().create_timer(active_strike_delay + 0.016, true, false, false).timeout.connect(func():
@@ -115,7 +116,7 @@ func start_attack() -> void:
 		get_tree().create_timer(fail_safe_buffer_delay, true, false, false).timeout.connect(func():
 			if runtime_sequence_id != current_sequence_generation: return
 			if not was_eval_window_processed:
-				print("⚠️ [FAIL-SAFE ENGAGED] Forcing hardware backup evaluation for Gen: %d." % current_sequence_generation)
+				#print("⚠️ [FAIL-SAFE ENGAGED] Forcing hardware backup evaluation for Gen: %d." % current_sequence_generation)
 				_on_combo_cancel_window_reached()
 		)
 
@@ -127,11 +128,11 @@ func _on_combo_cancel_window_reached() -> void:
 	var evaluation_generation = runtime_sequence_id
 
 	if combo_buffered:
-		print("🔄 [TIMELINE EVENT] Pre-buffered input validated at cancel frame. Chaining forward.")
+		#print("🔄 [TIMELINE EVENT] Pre-buffered input validated at cancel frame. Chaining forward.")
 		_execute_combo_chain()
 	else:
 		can_instant_cancel = true
-		print("⏱️ [TIMELINE EVENT] Recovery entered for Gen: %d. Instant manual cancels unblocked." % evaluation_generation)
+		#print("⏱️ [TIMELINE EVENT] Recovery entered for Gen: %d. Instant manual cancels unblocked." % evaluation_generation)
 
 		var remaining_recovery = current_total_duration - current_eval_delay
 		get_tree().create_timer(remaining_recovery, true, false, false).timeout.connect(func():
@@ -142,7 +143,7 @@ func _on_combo_cancel_window_reached() -> void:
 			can_buffer = false
 			can_instant_cancel = false
 			combo_step = 0
-			print("🛑 [RESET TO IDLE] Full sequence complete for Gen: %d. State registers flushed." % evaluation_generation)
+			#print("🛑 [RESET TO IDLE] Full sequence complete for Gen: %d. State registers flushed." % evaluation_generation)
 		)
 
 func _execute_combo_chain() -> void:
@@ -151,5 +152,5 @@ func _execute_combo_chain() -> void:
 	can_instant_cancel = false
 
 	combo_step = 0 if combo_step >= 2 else combo_step + 1
-	print("🔄 [CHAINING COMBO] Shifting internal state step register to: %d" % combo_step)
+	#print("🔄 [CHAINING COMBO] Shifting internal state step register to: %d" % combo_step)
 	start_attack()

@@ -2,40 +2,51 @@
 
 [ext_resource type="Script" uid="uid://chqgpqrcmsoxl" path="res://levels/hub/hub.gd" id="1_teesn"]
 [ext_resource type="PackedScene" uid="uid://8owkf4gyoy0v" path="res://actors/player/player.tscn" id="1_x3tnt"]
+[ext_resource type="PackedScene" uid="uid://cfjk74ks0wvm4" path="res://actors/player/VFX/SlashVFX.tscn" id="2_4lsbo"]
 [ext_resource type="PackedScene" uid="uid://bnle1pmef2w1k" path="res://ui/camera_transition_screen.tscn" id="2_qpe5p"]
 [ext_resource type="PackedScene" uid="uid://iys5k8v4l8dp" path="res://actors/enemies/active_enemy.tscn" id="4_4k5b7"]
 [ext_resource type="Script" uid="uid://bpi2u0n54s3sj" path="res://systems/spawning/horde_manager.gd" id="4_50hlt"]
 [ext_resource type="Shader" uid="uid://dy8feuhtxntbd" path="res://systems/shaders/spectral_skull.gdshader" id="5_ro0uo"]
 [ext_resource type="Texture2D" uid="uid://j3wir65rrsjh" path="res://Art/skull_head_SkullHead.png" id="6_4k5b7"]
+[ext_resource type="Script" uid="uid://d2wts35u4akro" path="res://systems/core/base_core.gd" id="7_teesn"]
+[ext_resource type="VoxelGeneratorGraph" uid="uid://br82dirjenwc7" path="res://levels/hub/voxel_generator_graph.tres" id="8_mtigy"]
+[ext_resource type="Shader" uid="uid://d0tf5rkgr7bu5" path="res://systems/shaders/voxel_terrain.gdshader" id="8_ne1d3"]
 [ext_resource type="Script" uid="uid://1tb2g2onmnvp" path="res://systems/spawning/horde_promotion_processor.gd" id="8_peekt"]
+[ext_resource type="Texture2D" uid="uid://c7mmqv4223itw" path="res://Art/Tiles/Sprite_atlas.png" id="9_438n3"]
 [ext_resource type="Script" uid="uid://pphx02oui05r" path="res://systems/spawning/swarm_simulation_processor.gd" id="10_teesn"]
-[ext_resource type="Material" uid="uid://d2wh34nmpqcyi" path="res://voxel/materials/master_material.tres" id="11_pjmii"]
+[ext_resource type="Shader" uid="uid://bslx3g2frs003" path="res://systems/shaders/fog_vignette.gdshader" id="13_ncjev"]
+[ext_resource type="Script" uid="uid://dcr2ipjkfqswh" path="res://components/fog_vignette.gd" id="14_5s154"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_e5kgj"]
-sky_horizon_color = Color(1.1994231, 0.6563724, 0.54103416, 1)
+sky_top_color = Color(0.03529412, 0.039215688, 0.2627451, 1)
+sky_horizon_color = Color(0.03529412, 0.039215688, 0.0627451, 1)
 ground_horizon_color = Color(1.2003407, 1.2376888, 1.2286887, 1)
 
 [sub_resource type="Sky" id="Sky_gv3io"]
 sky_material = SubResource("ProceduralSkyMaterial_e5kgj")
 
 [sub_resource type="Environment" id="Environment_bbero"]
-background_mode = 2
+background_mode = 1
+background_color = Color(0.00555238, 1.5281513e-06, 0.05974879, 1)
 sky = SubResource("Sky_gv3io")
+ambient_light_source = 2
+ambient_light_color = Color(0.39225048, 0.35659504, 0.99998933, 1)
+ambient_light_energy = 0.6
 tonemap_mode = 3
-tonemap_exposure = 0.8
 glow_enabled = true
-glow_intensity = 0.5
+glow_intensity = 0.9
 glow_strength = 0.7
+glow_bloom = 0.2
 glow_blend_mode = 0
-glow_hdr_threshold = 1.1
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gv3io"]
-albedo_color = Color(1, 0.6627451, 1, 1)
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_b13uo"]
-material = SubResource("StandardMaterial3D_gv3io")
-
-[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_bbero"]
+fog_light_color = Color(0.11191606, 0.119363375, 0.16257763, 1)
+fog_height = 4.0
+fog_height_density = 1.3
+fog_depth_begin = 42.0
+fog_depth_end = 45.0
+adjustment_enabled = true
+adjustment_brightness = 0.95
+adjustment_contrast = 1.15
+adjustment_saturation = 0.85
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4k5b7"]
 render_priority = 0
@@ -93,125 +104,20 @@ albedo_color = Color(0.011764706, 0.78431374, 1, 1)
 [sub_resource type="SphereMesh" id="SphereMesh_akppw"]
 material = SubResource("StandardMaterial3D_dljov")
 
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_50hlt"]
-noise_type = 5
-frequency = 0.85
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_pjmii"]
-noise_type = 0
-frequency = 0.02
-
-[sub_resource type="VoxelGeneratorGraph" id="VoxelGeneratorGraph_0uhcw"]
-graph_data = {
-"connections": [[1, 0, 6, 0], [1, 0, 10, 0], [2, 0, 9, 0], [2, 0, 13, 2], [10, 0, 11, 2], [10, 0, 12, 2], [11, 0, 12, 0], [12, 0, 13, 1], [13, 0, 14, 0], [14, 0, 15, 0], [3, 0, 6, 1], [3, 0, 10, 1], [6, 0, 7, 0], [7, 0, 8, 0], [8, 0, 9, 1], [9, 0, 14, 2]],
-"nodes": {
-"1": {
-"auto_connect": false,
-"gui_position": Vector2(-106.666664, 213.33333),
-"type": "InputX"
-},
-"10": {
-"auto_connect": true,
-"gui_position": Vector2(481.41522, 160.47174),
-"name": &"Static_Noise",
-"noise": SubResource("FastNoiseLite_50hlt"),
-"type": "Noise2D"
-},
-"11": {
-"a": 1.0,
-"auto_connect": false,
-"b": 2.0,
-"gui_position": Vector2(480, 293.33334),
-"name": &"Detail_Percentage",
-"threshold": 0.0,
-"type": "Select"
-},
-"12": {
-"auto_connect": false,
-"b": 3.0,
-"gui_position": Vector2(480, 453.33334),
-"name": &"Hero_Percentage",
-"threshold": 0.4,
-"type": "Select"
-},
-"13": {
-"a": 4.0,
-"auto_connect": false,
-"gui_position": Vector2(800, 160),
-"name": &"Layer_Manager",
-"threshold": 0.0,
-"type": "Select"
-},
-"14": {
-"auto_connect": false,
-"b": 0.0,
-"gui_position": Vector2(1120, 186.66667),
-"name": &"Master_Gate",
-"threshold": 0.0,
-"type": "Select"
-},
-"15": {
-"auto_connect": false,
-"gui_position": Vector2(1428.1777, 199.28062),
-"type": "OutputType"
-},
-"2": {
-"auto_connect": false,
-"gui_position": Vector2(-106.666664, 533.3333),
-"type": "InputY"
-},
-"3": {
-"auto_connect": false,
-"gui_position": Vector2(-106.666664, 400),
-"type": "InputZ"
-},
-"6": {
-"auto_connect": true,
-"gui_position": Vector2(133.33333, 106.666664),
-"name": &"Wave_Noise",
-"noise": SubResource("FastNoiseLite_pjmii"),
-"type": "Noise2D"
-},
-"7": {
-"auto_connect": false,
-"b": 1.5,
-"gui_position": Vector2(133.33333, 240),
-"type": "Multiply"
-},
-"8": {
-"auto_connect": false,
-"b": 1.5,
-"gui_position": Vector2(133.33333, 373.33334),
-"type": "Add"
-},
-"9": {
-"auto_connect": false,
-"gui_position": Vector2(133.33333, 506.66666),
-"type": "Subtract"
-}
-},
-"version": 2
-}
-
 [sub_resource type="VoxelBlockyModelEmpty" id="VoxelBlockyModelEmpty_ybb3b"]
 
 [sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ybb3b"]
-material_override_0 = ExtResource("11_pjmii")
 
 [sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_pjmii"]
-material_override_0 = ExtResource("11_pjmii")
 tile_top = Vector2i(2, 0)
 
 [sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_0uhcw"]
-material_override_0 = ExtResource("11_pjmii")
 tile_top = Vector2i(2, 2)
 
 [sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_50hlt"]
-material_override_0 = ExtResource("11_pjmii")
 tile_top = Vector2i(3, 0)
 
 [sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ybcde"]
-material_override_0 = ExtResource("11_pjmii")
 tile_top = Vector2i(5, 0)
 
 [sub_resource type="VoxelBlockyLibrary" id="VoxelBlockyLibrary_uqynj"]
@@ -221,13 +127,48 @@ models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_ybb3b"), Su
 [sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_uly8e"]
 library = SubResource("VoxelBlockyLibrary_uqynj")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_peekt"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ne1d3"]
+render_priority = 0
+shader = ExtResource("8_ne1d3")
+shader_parameter/texture_atlas = ExtResource("9_438n3")
+shader_parameter/edge_pop = 0.15
+shader_parameter/side_shade = 0.1
+shader_parameter/emit_threshold = 0.85
+shader_parameter/emit_energy = 3.0
+shader_parameter/voxel_edge_color = Color(1.8056252, 1.9001008, 1.6312085, 1)
+shader_parameter/voxel_edge_visible = 0.2000000095
+shader_parameter/voxel_edge_thickness = 0.02000000060074
+shader_parameter/voxel_scale = 1.00000004424012
+shader_parameter/height_gradient_impact = 0.25
+shader_parameter/world_height_scale = 0.0333
+shader_parameter/world_height_offset = 0.5
+shader_parameter/directional_contrast = 0.08
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ne1d3"]
 transparency = 1
 cull_mode = 2
 shading_mode = 0
 albedo_color = Color(0, 1, 0.4, 0.25)
 
-[sub_resource type="ImmediateMesh" id="ImmediateMesh_ro0uo"]
+[sub_resource type="ImmediateMesh" id="ImmediateMesh_mtigy"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mtigy"]
+render_priority = 0
+shader = ExtResource("13_ncjev")
+shader_parameter/player_world_pos = Vector3(0, 0, 0)
+shader_parameter/fog_radius = 0.0
+shader_parameter/fog_feather = 19.0000009025
+shader_parameter/fog_color = Color(0.64380187, 0.54286665, 0.3401074, 1)
+shader_parameter/energy_color = Color(4.042983e-06, 0.25429246, 0.7063582, 1)
+shader_parameter/energy_bleed_falloff = 6.000000281740119
+shader_parameter/fog_max_height = 4.0
+shader_parameter/fog_height_feather = 2.0
+shader_parameter/wave_speed = 3.0000001425
+shader_parameter/wave_frequency = 0.800000038
+shader_parameter/wave_amplitude = 0.800000038
+
+[sub_resource type="QuadMesh" id="QuadMesh_ne1d3"]
+size = Vector2(2, 2)
 
 [node name="Hub" type="Node3D" unique_id=1740846699]
 script = ExtResource("1_teesn")
@@ -236,10 +177,12 @@ script = ExtResource("1_teesn")
 environment = SubResource("Environment_bbero")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=513714872]
-transform = Transform3D(-0.9396926, -0.3014236, 0.16162188, 0, 0.4725507, 0.8813035, -0.3420202, 0.8281544, -0.4440524, 9, 0, 0)
-light_energy = 0.2
+transform = Transform3D(1, 0, 0, 0, -0.9396926, 0.3420202, 0, -0.3420202, -0.9396926, 9, 4.347668, 0)
+light_color = Color(0.6509804, 0.7411765, 0.9490196, 1)
+light_energy = 2.0
 light_bake_mode = 0
 shadow_enabled = true
+shadow_opacity = 0.8
 directional_shadow_mode = 0
 directional_shadow_max_distance = 80.0
 
@@ -247,35 +190,22 @@ directional_shadow_max_distance = 80.0
 
 [node name="ColorRect" parent="CameraTransitionLayer" index="0" unique_id=1589128641 node_paths=PackedStringArray("camera_manager")]
 color = Color(0, 0, 0, 1)
-camera_manager = NodePath("../../PlayerBody/CameraManager")
-
-[node name="Floor" type="Node3D" parent="." unique_id=1205210452]
-transform = Transform3D(2000, 0, 0, 0, 2000, 0, 0, 0, 2000, 0, 0, 0)
-visible = false
-
-[node name="Visuals" type="MeshInstance3D" parent="Floor" unique_id=162217976]
-mesh = SubResource("PlaneMesh_b13uo")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Floor/Visuals" unique_id=399483843]
-collision_layer = 2
-collision_mask = 2
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor/Visuals/StaticBody3D" unique_id=1710246620]
-shape = SubResource("WorldBoundaryShape3D_bbero")
+camera_manager = NodePath("../../Player/CameraManager")
 
 [node name="HordeManager" type="Node3D" parent="." unique_id=1016560398 node_paths=PackedStringArray("player", "core_node", "multimesh", "simulation_processor", "promotion_processor", "voxel_terrain")]
 script = ExtResource("4_50hlt")
-player = NodePath("../PlayerBody")
+player = NodePath("../Player")
 core_node = NodePath("../BaseCore")
 multimesh = NodePath("MultiMeshInstance3D")
 active_enemy_scene = ExtResource("4_4k5b7")
 simulation_processor = NodePath("../SwarmProcessor")
 promotion_processor = NodePath("../PromotionProcessor")
 voxel_terrain = NodePath("../VoxelTerrain")
-pool_size = 500
+pool_size = 300
 max_concurrent_enemies = 100
 base_speed = 3.0
 enemy_scale = 0.8
+default_hp = 50.0
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="HordeManager" unique_id=345072643]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
@@ -284,6 +214,8 @@ multimesh = SubResource("MultiMesh_nywl4")
 
 [node name="BaseCore" type="Node3D" parent="." unique_id=774482685]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.345341, 2.3940265, -2.5921168)
+script = ExtResource("7_teesn")
+max_health = 1000.0
 
 [node name="VoxelViewer" type="VoxelViewer" parent="BaseCore" unique_id=1463625045]
 
@@ -291,48 +223,48 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.345341, 2.3940265, -2.59211
 mesh = SubResource("SphereMesh_akppw")
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="." unique_id=342734692]
-generator = SubResource("VoxelGeneratorGraph_0uhcw")
+generator = ExtResource("8_mtigy")
 mesher = SubResource("VoxelMesherBlocky_uly8e")
-max_view_distance = 64
+max_view_distance = 50
+material_override = SubResource("ShaderMaterial_ne1d3")
 
-[node name="PlayerBody" parent="." unique_id=1816063018 instance=ExtResource("1_x3tnt")]
+[node name="Player" parent="." unique_id=1816063018 instance=ExtResource("1_x3tnt")]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.054854, 0)
+slash_scene = ExtResource("2_4lsbo")
 
-[node name="CombatComponent" parent="PlayerBody" index="2" unique_id=2136704143 node_paths=PackedStringArray("horde_manager")]
+[node name="CombatComponent" parent="Player" index="6" unique_id=2136704143 node_paths=PackedStringArray("horde_manager")]
 horde_manager = NodePath("../../HordeManager")
 strike_arc_degrees = 200.0
 
-[node name="SpatialSweepQuery" parent="PlayerBody/CombatComponent" index="1" unique_id=204529483]
+[node name="SpatialSweepQuery" parent="Player/CombatComponent" index="1" unique_id=204529483]
 visible = false
 
-[node name="MeleeVisualizer3D" parent="PlayerBody/CombatComponent" index="3" unique_id=2042561060]
-material_override = SubResource("StandardMaterial3D_peekt")
-mesh = SubResource("ImmediateMesh_ro0uo")
+[node name="MeleeVisualizer3D" parent="Player/CombatComponent" index="3" unique_id=2042561060]
+material_override = SubResource("StandardMaterial3D_ne1d3")
+mesh = SubResource("ImmediateMesh_mtigy")
 arc_resolution_segments = 16
 
-[node name="Camera3D" parent="PlayerBody/CameraManager" parent_id_path=PackedInt32Array(1816063018, 2031014716) index="0" unique_id=981501342]
+[node name="VoxelViewer" parent="Player" index="10" unique_id=220781735]
+view_distance = 50
+
+[node name="Camera3D" parent="Player/CameraManager" parent_id_path=PackedInt32Array(1816063018, 2031014716) index="0" unique_id=981501342]
 transform = Transform3D(0.7071067, 0.40759927, -0.57780874, 0, 0.8171449, 0.5764324, 0.7071068, -0.40759924, 0.5778086, -26.00139, 30.311821, 26.001389)
 
-[node name="isometric_camera" parent="PlayerBody/CameraManager/Isometric" parent_id_path=PackedInt32Array(1816063018, 515798333) index="0" unique_id=1517337212]
-transform = Transform3D(0.7071067, 0.40759927, -0.57780874, 0, 0.8171449, 0.5764324, 0.7071068, -0.40759924, 0.5778086, -26.00139, 26.256968, 26.001389)
-
-[node name="L_foot" parent="PlayerBody/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="0" unique_id=1477942347]
+[node name="L_foot" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="0" unique_id=1477942347]
 transform = Transform3D(1, 0, 0, 0, -0.1736481, -0.98480725, 0, 0.98480725, -0.1736481, 1.5707964, 0, 0)
 
-[node name="R_foot" parent="PlayerBody/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="1" unique_id=696450015]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -0.2, 0.09, -0.5)
-
-[node name="L_hand" parent="PlayerBody/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="2" unique_id=242618355]
+[node name="L_hand" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="2" unique_id=242618355]
 transform = Transform3D(1, 0, 0, 0, -0.42261833, -0.90630776, 0, 0.90630776, -0.42261833, 0.637, 0.9, 0.8722038)
 
-[node name="R_hand" parent="PlayerBody/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="3" unique_id=1952428876]
-transform = Transform3D(0.557934, 0.27572122, -0.7827435, -0.81430805, -3.5594525e-08, -0.58043295, -0.16003776, 0.9612373, 0.22452205, -0.70000017, 0.9873594, -0.40213984)
+[node name="R_hand" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="3" unique_id=1952428876]
+transform = Transform3D(0.55793345, 0.27572122, -0.7827418, -0.8143072, -3.5594525e-08, -0.5804317, -0.16003759, 0.9612373, 0.22452156, -0.70000017, 0.9873594, -0.40213984)
 
-[node name="Head" parent="PlayerBody/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="4" unique_id=1406633415]
-transform = Transform3D(1, 0, 0, 0, 0.087155804, -0.9961947, 0, 0.9961947, 0.087155804, 0, 1.6208816, 0.0593987)
+[node name="Head" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="4" unique_id=1406633415]
+transform = Transform3D(1, 0, 0, 0, 0.08715561, -0.9961925, 0, 0.9961925, 0.08715561, 0, 1.6208816, 0.0593987)
 
-[node name="Torso" parent="PlayerBody/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="5" unique_id=866137388]
-transform = Transform3D(1, 0, 0, 0, -0.3420201, -0.93969256, 0, 0.93969256, -0.3420201, 0.0015437336, 0.6061756, -0.113722295)
+[node name="Torso" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="5" unique_id=866137388]
+transform = Transform3D(1, 0, 0, 0, -0.34201926, -0.9396903, 0, 0.9396903, -0.34201926, 0.0015437336, 0.6061756, -0.113722295)
 
 [node name="SwarmProcessor" type="Node3D" parent="." unique_id=4828911]
 script = ExtResource("10_teesn")
@@ -342,5 +274,13 @@ swarmer_body_radius = 1.0
 [node name="PromotionProcessor" type="Node3D" parent="." unique_id=387970015]
 script = ExtResource("8_peekt")
 
+[node name="FogVignette" type="MeshInstance3D" parent="." unique_id=367477336 node_paths=PackedStringArray("player_node")]
+material_override = SubResource("ShaderMaterial_mtigy")
+extra_cull_margin = 16384.0
+mesh = SubResource("QuadMesh_ne1d3")
+script = ExtResource("14_5s154")
+player_node = NodePath("../Player")
+metadata/_custom_type_script = "uid://dcr2ipjkfqswh"
+
 [editable path="CameraTransitionLayer"]
-[editable path="PlayerBody"]
+[editable path="Player"]

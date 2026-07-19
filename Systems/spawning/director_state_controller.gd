@@ -50,7 +50,7 @@ var breathing_window_timer: float = 0.0
 var active_spawn_scalar: float = 1.0
 
 func _ready() -> void:
-	print("🎬 [PACING ENGINE INITIALIZED] Running Standalone Base Defense Matrix.")
+	#print("🎬 [PACING ENGINE INITIALIZED] Running Standalone Base Defense Matrix.")
 	_initialize_defense_wave()
 
 func _physics_process(delta: float) -> void:
@@ -67,7 +67,7 @@ func _physics_process(delta: float) -> void:
 		# EXTERMINATION PASS: Victory triggers when the live index flushes completely
 		if horde_manager and horde_manager.alive_count == 0:
 			set_physics_process(false)
-			print("🏆 [PACING ENGINE] Wave Cleared Successfully! All entities wiped.")
+			#print("🏆 [PACING ENGINE] Wave Cleared Successfully! All entities wiped.")
 			wave_completed.emit()
 
 	# Throttled Telemetry Performance Diagnostics Output
@@ -99,12 +99,14 @@ func _advance_defense_stage() -> void:
 
 	match current_defense_stage:
 		DefenseStage.SQUEEZE:
-			print("🚨 [TIMELINE SHIFT] Entering Stage 2: THE SQUEEZE. Ramping flank vectors.")
+			#print("🚨 [TIMELINE SHIFT] Entering Stage 2: THE SQUEEZE. Ramping flank vectors.")
+			pass
 		DefenseStage.APEX_BREACH:
-			print("💥 [TIMELINE SHIFT] Entering Stage 3: APEX BREACH. Heavy payloads authorized.")
+			#print("💥 [TIMELINE SHIFT] Entering Stage 3: APEX BREACH. Heavy payloads authorized.")
 			_trigger_elite_strike_force()
 		DefenseStage.EXTERMINATION:
-			print("🧹 [TIMELINE SHIFT] Entering Stage 4: EXTERMINATION. Spawners disabled.")
+			#print("🧹 [TIMELINE SHIFT] Entering Stage 4: EXTERMINATION. Spawners disabled.")
+			pass
 
 	defense_stage_changed.emit(current_defense_stage)
 
@@ -136,7 +138,7 @@ func _evaluate_breathing_windows(delta: float) -> void:
 	if global_tension >= tension_panic_threshold and not breathing_window_active:
 		breathing_window_active = true
 		breathing_window_timer = 0.0
-		print("🧼 [ENGAGEMENT] Panic state hit (%.1f%%). Opening safety breathing window." % global_tension)
+		#print("🧼 [ENGAGEMENT] Panic state hit (%.1f%%). Opening safety breathing window." % global_tension)
 
 	if breathing_window_active:
 		breathing_window_timer += delta
@@ -145,7 +147,7 @@ func _evaluate_breathing_windows(delta: float) -> void:
 		if breathing_window_timer >= breathing_window_duration and global_tension < tension_panic_threshold:
 			breathing_window_active = false
 			active_spawn_scalar = 1.0
-			print("🔥 [ENGAGEMENT] Safety window closed. Re-engaging standard pacing metrics.")
+			#print("🔥 [ENGAGEMENT] Safety window closed. Re-engaging standard pacing metrics.")
 	else:
 		active_spawn_scalar = 1.0
 
@@ -193,6 +195,6 @@ func _log_pacing_telemetry() -> void:
 	var flag: String = "[BREATHING]" if breathing_window_active else "[NORMAL]"
 	var live_count: int = horde_manager.alive_count if horde_manager else 0
 
-	print("📊 [STAGE: %s] | Tension: %.1f%% %s | Clock: %.1fs | Swarmers: %d" % [
-		stage_name, global_tension, flag, stage_timer, live_count
-	])
+	#print("📊 [STAGE: %s] | Tension: %.1f%% %s | Clock: %.1fs | Swarmers: %d" % [
+	#	stage_name, global_tension, flag, stage_timer, live_count
+	#])

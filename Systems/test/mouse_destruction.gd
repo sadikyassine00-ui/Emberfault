@@ -37,3 +37,4 @@ extends Camera3D
 		#voxel_tool.do_sphere(hit_pos, melee_radius)
 	#else:
 		#print("Engine rejected edit. Hit coordinate: ", hit_pos)
+

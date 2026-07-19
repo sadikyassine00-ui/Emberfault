@@ -1,8 +1,10 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://dmm2gjg2gx1a3"]
 
-[ext_resource type="Texture2D" path="res://assets/characters/axyl/axyl_Axyl-0.png" id="1_slri6"]
+[ext_resource type="Texture2D" uid="uid://bwbvm0kjbmii" path="res://assets/characters/axyl/axyl_Axyl-0.png" id="1_slri6"]
 
 [resource]
 resource_name = "palette"
 cull_mode = 2
+albedo_color = Color(3.2944162, 3.2944162, 3.2944162, 1)
 albedo_texture = ExtResource("1_slri6")
+albedo_texture_force_srgb = true

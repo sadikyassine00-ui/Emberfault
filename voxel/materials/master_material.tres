@@ -1,7 +1,9 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://d2wh34nmpqcyi"]
 
-[ext_resource type="Texture2D" path="res://assets/tiles/Sprite_atlas.png" id="1_q8foq"]
+[ext_resource type="Texture2D" uid="uid://6sm1oanc5f31" path="res://assets/tiles/Sprite_atlas.png" id="1_q8foq"]
 
 [resource]
 albedo_texture = ExtResource("1_q8foq")
+metallic_specular = 0.2
+rim = 0.25
 texture_filter = 0

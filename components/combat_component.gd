@@ -87,7 +87,7 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 		combat_juice_engine.execute_strike_juice(hammer_mesh, hit_stop_duration, combo_step)
 
 	if not horde_manager:
-		print("❌ [COMBAT FATAL] Aborting strike: horde_manager reference is NULL!")
+		#print("❌ [COMBAT FATAL] Aborting strike: horde_manager reference is NULL!")
 		return
 
 	# --- 📐 HIGH-PERFORMANCE SWEEP DATA LOOP ---
