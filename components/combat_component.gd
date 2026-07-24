@@ -87,7 +87,6 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 		combat_juice_engine.execute_strike_juice(hammer_mesh, hit_stop_duration, combo_step)
 
 	if not horde_manager:
-		#print("❌ [COMBAT FATAL] Aborting strike: horde_manager reference is NULL!")
 		return
 
 	# --- 📐 HIGH-PERFORMANCE SWEEP DATA LOOP ---
@@ -122,7 +121,6 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 func _route_batch_to_horde_manager(indices: PackedInt32Array, combo_step: int) -> void:
 	if not horde_manager: return
 
-	# ⚡ THE SOLVED ENGINE ROUTE: Direct allocation of your global DamagePayload resource class
 	var current_payload = DamagePayload.new()
 
 	if combo_step < 2:

@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://0pgeq08gplon"]
+
+[ext_resource type="Material" uid="uid://d1x73ox0x02jv" path="res://particles/voxel_shatter.tres" id="1_58jgq"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_58jgq"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 0.12156863, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_330fx"]
+material = SubResource("StandardMaterial3D_58jgq")
+size = Vector3(0.2, 0.2, 0.2)
+
+[node name="VoxelShatterEmitter" type="GPUParticles3D" unique_id=1096434477]
+emitting = false
+amount = 128
+lifetime = 2.0
+one_shot = true
+explosiveness = 1.0
+process_material = ExtResource("1_58jgq")
+draw_pass_1 = SubResource("BoxMesh_330fx")
+
+[node name="FloorCollisionBox" type="GPUParticlesCollisionBox3D" parent="." unique_id=542085048]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+size = Vector3(12, 1, 12)

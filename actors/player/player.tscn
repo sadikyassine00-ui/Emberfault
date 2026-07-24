@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://bepqhfunigujq" path="res://components/health_component.gd" id="2_ctwkf"]
 [ext_resource type="PackedScene" uid="uid://cfjk74ks0wvm4" path="res://actors/player/VFX/SlashVFX.tscn" id="2_icg72"]
 [ext_resource type="Script" uid="uid://xjbpl4pgvuno" path="res://components/movement_component.gd" id="2_lu8i8"]
+[ext_resource type="PackedScene" uid="uid://0pgeq08gplon" path="res://particles/VoxelShatterEmitter.tscn" id="2_nsxbo"]
 [ext_resource type="Script" uid="uid://dfdfedqttxrg5" path="res://systems/camera/camera_manager.gd" id="3_4wf4l"]
 [ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="4_01a4e"]
 [ext_resource type="Script" uid="uid://csjccrhj5wnx7" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_3d.gd" id="4_5c2io"]
@@ -27,13 +28,13 @@
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_rt46e"]
 radius = 3.5
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_icg72"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nsxbo"]
 transparency = 1
 cull_mode = 2
 shading_mode = 0
 albedo_color = Color(0, 1, 0.4, 0.25)
 
-[sub_resource type="ImmediateMesh" id="ImmediateMesh_lj3dd"]
+[sub_resource type="ImmediateMesh" id="ImmediateMesh_yeioo"]
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_01a4e"]
 albedo_color = Color(0.6784314, 1, 0.34117648, 1)
@@ -1643,6 +1644,8 @@ graph_offset = Vector2(-160.14029, -89.258896)
 collision_layer = 2
 script = ExtResource("1_3uyv8")
 
+[node name="VoxelShatterEmitter" parent="." unique_id=1096434477 instance=ExtResource("2_nsxbo")]
+
 [node name="VolumetricTrail" parent="." unique_id=950106774 node_paths=PackedStringArray("anchor_node", "alternate_anchor_node") instance=ExtResource("2_icg72")]
 skeleton = NodePath("../VFX")
 anchor_node = NodePath("../Axyl/Slash1Anchor")
@@ -1679,8 +1682,9 @@ visuals_container = NodePath("../Axyl/Visuals")
 hammer_mesh = NodePath("../Axyl/Visuals/R_hand/Hammer")
 hit_stop_duration = 0.0
 
-[node name="CombatBuffer" type="Node" parent="CombatComponent" unique_id=794272988]
+[node name="CombatBuffer" type="Node" parent="CombatComponent" unique_id=794272988 node_paths=PackedStringArray("shatter_particle_emitter")]
 script = ExtResource("18_buffer")
+shatter_particle_emitter = NodePath("../../VoxelShatterEmitter")
 
 [node name="SpatialSweepQuery" type="ShapeCast3D" parent="CombatComponent" unique_id=204529483]
 shape = SubResource("CylinderShape3D_rt46e")
@@ -1692,8 +1696,8 @@ script = ExtResource("19_sweep")
 script = ExtResource("20_juice")
 
 [node name="MeleeVisualizer3D" type="MeshInstance3D" parent="CombatComponent" unique_id=2042561060]
-material_override = SubResource("StandardMaterial3D_icg72")
-mesh = SubResource("ImmediateMesh_lj3dd")
+material_override = SubResource("StandardMaterial3D_nsxbo")
+mesh = SubResource("ImmediateMesh_yeioo")
 script = ExtResource("7_otn2r")
 
 [node name="PhaseAdapter" type="Node3D" parent="." unique_id=1901511077]
@@ -1777,7 +1781,7 @@ transform = Transform3D(-5.3809128e-08, 9.488002e-09, 1.2499998, 0.21706018, 1.2
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.15, 0)
 
 [node name="L_foot" type="MeshInstance3D" parent="Axyl/Visuals" unique_id=1477942347]
-transform = Transform3D(1, 0, 0, 0, -0.17364813, -0.9848074, 0, 0.9848074, -0.17364813, 1.5707964, 0, 0)
+transform = Transform3D(1, 0, 0, 0, -0.17364812, -0.9848073, 0, 0.9848073, -0.17364812, 1.5707964, 0, 0)
 mesh = SubResource("ArrayMesh_rvd7c")
 skeleton = NodePath("")
 
@@ -1792,7 +1796,7 @@ mesh = SubResource("ArrayMesh_1441w")
 skeleton = NodePath("")
 
 [node name="R_hand" type="MeshInstance3D" parent="Axyl/Visuals" unique_id=1952428876]
-transform = Transform3D(0.55793387, 0.27572122, -0.7827432, -0.8143079, -3.5594525e-08, -0.5804327, -0.16003773, 0.9612373, 0.22452196, -0.70000017, 0.9873594, -0.40213984)
+transform = Transform3D(0.55793387, 0.27572122, -0.78274316, -0.81430787, -3.5594525e-08, -0.58043265, -0.16003771, 0.9612373, 0.22452195, -0.70000017, 0.9873594, -0.40213984)
 mesh = SubResource("ArrayMesh_8ycbl")
 skeleton = NodePath("")
 
@@ -1827,7 +1831,7 @@ mesh = SubResource("ArrayMesh_6ul1y")
 skeleton = NodePath("")
 
 [node name="Torso" type="MeshInstance3D" parent="Axyl/Visuals" unique_id=866137388]
-transform = Transform3D(0.99999994, 0, 0, 0, -0.34201998, -0.93969226, 0, 0.9396922, -0.34202, 0.0015437336, 0.6061756, -0.113722295)
+transform = Transform3D(0.99999994, 0, 0, 0, -0.34201998, -0.9396922, 0, 0.93969214, -0.34201998, 0.0015437336, 0.6061756, -0.113722295)
 mesh = SubResource("ArrayMesh_kayig")
 skeleton = NodePath("")
 
