@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3 uid="uid://cjo05mudy1453"]
+
+[ext_resource type="Script" path="res://ui/wave_hud.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://dcifv02w1nlgu" path="res://default_theme.tres" id="1_ikyhj"]
+
+[node name="WaveHUD" type="CanvasLayer" unique_id=194343642]
+script = ExtResource("1_script")
+
+[node name="MarginContainer" type="Control" parent="." unique_id=606514846]
+layout_mode = 3
+anchor_top = 0.155
+anchor_right = 0.9990001
+anchor_bottom = 0.44300002
+offset_top = -0.3999939
+offset_right = 0.9199219
+offset_bottom = -0.44003296
+theme = ExtResource("1_ikyhj")
+
+[node name="TopCenter_TimerBox" type="VBoxContainer" parent="MarginContainer" unique_id=1508254016]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.002
+anchor_top = 0.26700002
+anchor_right = 1.0
+anchor_bottom = 1.116
+offset_left = -0.8380003
+offset_top = -0.037002563
+offset_right = 9.0
+offset_bottom = -0.07601929
+
+[node name="PhaseNameLabel" type="Label" parent="MarginContainer/TopCenter_TimerBox" unique_id=709068584]
+layout_mode = 2
+
+[node name="TimerLabel" type="Label" parent="MarginContainer/TopCenter_TimerBox" unique_id=1016369137]
+layout_mode = 2
+
+[node name="Center_VictoryBanner" type="Control" parent="MarginContainer" unique_id=767854059]
+layout_mode = 1
+anchor_left = 0.0050000004
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 2.026
+offset_left = -0.59500027
+offset_top = -8.5
+offset_right = 5.0
+offset_bottom = -0.085998535
+
+[node name="VictoryTextLabel" type="Label" parent="MarginContainer/Center_VictoryBanner" unique_id=1097008276]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.9990001
+anchor_bottom = 0.76000005
+offset_right = 0.914917
+offset_bottom = -0.08001709

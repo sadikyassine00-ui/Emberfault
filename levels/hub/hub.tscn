@@ -19,6 +19,8 @@
 [ext_resource type="Script" uid="uid://dcr2ipjkfqswh" path="res://components/fog_vignette.gd" id="14_5s154"]
 [ext_resource type="AudioStream" uid="uid://cjfhagdyku7px" path="res://systems/audio/SFX/hammer_hit_1.wav" id="14_or7xq"]
 [ext_resource type="AudioStream" uid="uid://dciff2t05ku54" path="res://systems/audio/SFX/hammer_hit_3.wav" id="15_e6ufk"]
+[ext_resource type="Script" uid="uid://dhowpvt3exf0x" path="res://systems/spawning/director_state_controller.gd" id="20_or7xq"]
+[ext_resource type="PackedScene" uid="uid://cjo05mudy1453" path="res://ui/WaveHUD.tscn" id="21_wavehud"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_e5kgj"]
 sky_top_color = Color(0.03529412, 0.039215688, 0.2627451, 1)
@@ -156,13 +158,13 @@ albedo_color = Color(3.234443, 0.00192523, 2.6114624, 1)
 material = SubResource("StandardMaterial3D_58jgq")
 size = Vector3(0.2, 0.2, 0.2)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e6ufk"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cut4f"]
 transparency = 1
 cull_mode = 2
 shading_mode = 0
 albedo_color = Color(0, 1, 0.4, 0.25)
 
-[sub_resource type="ImmediateMesh" id="ImmediateMesh_or7xq"]
+[sub_resource type="ImmediateMesh" id="ImmediateMesh_0cj56"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_mtigy"]
 render_priority = 0
@@ -204,6 +206,9 @@ directional_shadow_max_distance = 80.0
 color = Color(0, 0, 0, 1)
 camera_manager = NodePath("../../Player/CameraManager")
 
+[node name="WaveHUD" parent="." unique_id=194343642 node_paths=PackedStringArray("director") instance=ExtResource("21_wavehud")]
+director = NodePath("../HordeDirector")
+
 [node name="HordeManager" type="Node3D" parent="." unique_id=1016560398 node_paths=PackedStringArray("player", "core_node", "multimesh", "simulation_processor", "promotion_processor", "voxel_terrain")]
 script = ExtResource("4_50hlt")
 player = NodePath("../Player")
@@ -213,8 +218,8 @@ active_enemy_scene = ExtResource("4_4k5b7")
 simulation_processor = NodePath("../SwarmProcessor")
 promotion_processor = NodePath("../PromotionProcessor")
 voxel_terrain = NodePath("../VoxelTerrain")
-pool_size = 300
-max_concurrent_enemies = 100
+pool_size = 50
+max_concurrent_enemies = 50
 base_speed = 3.0
 enemy_scale = 0.8
 default_hp = 50.0
@@ -259,15 +264,13 @@ terrain_manager = NodePath("../../../VoxelTerrain")
 hit_sfx_attack_1_pool = Array[AudioStream]([ExtResource("13_e6ufk"), ExtResource("14_or7xq")])
 hit_sfx_attack_2_pool = Array[AudioStream]([ExtResource("14_or7xq"), ExtResource("13_e6ufk")])
 hit_sfx_attack_3_pool = Array[AudioStream]([ExtResource("15_e6ufk")])
-shatter_width = 4
-shatter_depth = 4
 
 [node name="SpatialSweepQuery" parent="Player/CombatComponent" index="1" unique_id=204529483]
 visible = false
 
 [node name="MeleeVisualizer3D" parent="Player/CombatComponent" index="3" unique_id=2042561060]
-material_override = SubResource("StandardMaterial3D_e6ufk")
-mesh = SubResource("ImmediateMesh_or7xq")
+material_override = SubResource("StandardMaterial3D_cut4f")
+mesh = SubResource("ImmediateMesh_0cj56")
 arc_resolution_segments = 16
 
 [node name="VoxelViewer" parent="Player" index="11" unique_id=220781735]
@@ -284,13 +287,13 @@ lifetime = 4.6
 transform = Transform3D(1, 0, 0, 0, -0.42261833, -0.90630776, 0, 0.90630776, -0.42261833, 0.637, 0.9, 0.8722038)
 
 [node name="R_hand" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="3" unique_id=1952428876]
-transform = Transform3D(0.5579331, 0.27572122, -0.78274107, -0.81430674, -3.5594525e-08, -0.5804311, -0.1600375, 0.9612373, 0.22452134, -0.70000017, 0.9873594, -0.40213984)
+transform = Transform3D(0.55793303, 0.27572122, -0.78274095, -0.8143067, -3.5594525e-08, -0.58043104, -0.16003749, 0.9612373, 0.22452132, -0.70000017, 0.9873594, -0.40213984)
 
 [node name="Head" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="4" unique_id=1406633415]
-transform = Transform3D(1, 0, 0, 0, 0.087155536, -0.9961917, 0, 0.9961917, 0.087155536, 0, 1.6208816, 0.0593987)
+transform = Transform3D(1, 0, 0, 0, 0.087155536, -0.9961916, 0, 0.9961916, 0.087155536, 0, 1.6208816, 0.0593987)
 
 [node name="Torso" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="5" unique_id=866137388]
-transform = Transform3D(1, 0, 0, 0, -0.34201902, -0.9396896, 0, 0.9396896, -0.34201902, 0.0015437336, 0.6061756, -0.113722295)
+transform = Transform3D(1, 0, 0, 0, -0.34201896, -0.9396894, 0, 0.9396894, -0.34201896, 0.0015437336, 0.6061756, -0.113722295)
 
 [node name="SwarmProcessor" type="Node3D" parent="." unique_id=4828911]
 script = ExtResource("10_teesn")
@@ -307,6 +310,12 @@ mesh = SubResource("QuadMesh_ne1d3")
 script = ExtResource("14_5s154")
 player_node = NodePath("../Player")
 metadata/_custom_type_script = "uid://dcr2ipjkfqswh"
+
+[node name="HordeDirector" type="Node3D" parent="." unique_id=1261319177 node_paths=PackedStringArray("horde_manager", "base_core_node")]
+script = ExtResource("20_or7xq")
+horde_manager = NodePath("../HordeManager")
+base_core_node = NodePath("../BaseCore")
+total_wave_enemy_quota = 20
 
 [editable path="CameraTransitionLayer"]
 [editable path="Player"]

@@ -31,13 +31,13 @@
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_rt46e"]
 radius = 3.5
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qct7d"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2vokq"]
 transparency = 1
 cull_mode = 2
 shading_mode = 0
 albedo_color = Color(0, 1, 0.4, 0.25)
 
-[sub_resource type="ImmediateMesh" id="ImmediateMesh_2vokq"]
+[sub_resource type="ImmediateMesh" id="ImmediateMesh_tpopl"]
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_01a4e"]
 albedo_color = Color(0.6784314, 1, 0.34117648, 1)
@@ -55,11 +55,13 @@ shader = ExtResource("14_yeioo")
 shader_parameter/wind_texture = ExtResource("15_2vokq")
 shader_parameter/wind_color = Color(0.85, 0.94, 1, 0.45)
 shader_parameter/core_color = Color(0.98, 1, 1, 0.85)
-shader_parameter/wind_speed = 18.0
-shader_parameter/spin_speed = 2.5
+shader_parameter/wave_speed = 10.0
+shader_parameter/wave_frequency = 6.0
+shader_parameter/wave_amplitude = 0.045
+shader_parameter/twist_intensity = 0.025
 
 [sub_resource type="QuadMesh" id="QuadMesh_2vokq"]
-size = Vector2(1.8, 1.0)
+size = Vector2(1.8, 1)
 
 [sub_resource type="Resource" id="Resource_01a4e"]
 script = ExtResource("5_4wf4l")
@@ -1700,6 +1702,8 @@ hit_stop_duration = 0.0
 [node name="CombatBuffer" type="Node" parent="CombatComponent" unique_id=794272988 node_paths=PackedStringArray("shatter_particle_emitter")]
 script = ExtResource("18_buffer")
 shatter_particle_emitter = NodePath("../../VoxelShatterEmitter")
+shatter_width = 1
+shatter_depth = 1
 
 [node name="SpatialSweepQuery" type="ShapeCast3D" parent="CombatComponent" unique_id=204529483]
 shape = SubResource("CylinderShape3D_rt46e")
@@ -1711,8 +1715,8 @@ script = ExtResource("19_sweep")
 script = ExtResource("20_juice")
 
 [node name="MeleeVisualizer3D" type="MeshInstance3D" parent="CombatComponent" unique_id=2042561060]
-material_override = SubResource("StandardMaterial3D_qct7d")
-mesh = SubResource("ImmediateMesh_2vokq")
+material_override = SubResource("StandardMaterial3D_2vokq")
+mesh = SubResource("ImmediateMesh_tpopl")
 script = ExtResource("7_otn2r")
 
 [node name="PhaseAdapter" type="Node3D" parent="." unique_id=1901511077]

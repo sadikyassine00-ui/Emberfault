@@ -1,0 +1,7 @@
+[gd_resource type="Theme" format=3 uid="uid://dcifv02w1nlgu"]
+
+[ext_resource type="FontFile" uid="uid://dfc2na0x2r1d4" path="res://font/Metamorphous-Regular.ttf" id="1_e7bfs"]
+
+[resource]
+default_font = ExtResource("1_e7bfs")
+default_font_size = 16

@@ -132,6 +132,11 @@ func process_swarm_physics(manager: Node, delta: float) -> void:
 	for i in range(live_count):
 		if m_states[i] == 0: continue
 
+		# Out-Of-Bounds Fall Guard: Cull enemies that clip/fall below terrain into the void
+		if m_positions[i].y < -25.0:
+			manager.kill_enemy(i)
+			continue
+
 		var hit_val: float = m_hit_timers[i]
 		if hit_val > 0.0:
 			hit_val = max(0.0, hit_val - delta * 15.0)

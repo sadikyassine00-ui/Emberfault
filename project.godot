@@ -56,6 +56,10 @@ folder_colors={
 "res://Entities/": "red"
 }
 
+[gui]
+
+theme/custom="uid://dcifv02w1nlgu"
+
 [input]
 
 move_up={
