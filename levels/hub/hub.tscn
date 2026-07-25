@@ -4,7 +4,6 @@
 [ext_resource type="PackedScene" uid="uid://8owkf4gyoy0v" path="res://actors/player/player.tscn" id="1_x3tnt"]
 [ext_resource type="PackedScene" uid="uid://cfjk74ks0wvm4" path="res://actors/player/VFX/SlashVFX.tscn" id="2_4lsbo"]
 [ext_resource type="PackedScene" uid="uid://bnle1pmef2w1k" path="res://ui/camera_transition_screen.tscn" id="2_qpe5p"]
-[ext_resource type="PackedScene" uid="uid://iys5k8v4l8dp" path="res://actors/enemies/active_enemy.tscn" id="4_4k5b7"]
 [ext_resource type="Script" uid="uid://bpi2u0n54s3sj" path="res://systems/spawning/horde_manager.gd" id="4_50hlt"]
 [ext_resource type="Shader" uid="uid://dy8feuhtxntbd" path="res://systems/shaders/spectral_skull.gdshader" id="5_ro0uo"]
 [ext_resource type="Texture2D" uid="uid://j3wir65rrsjh" path="res://Art/skull_head_SkullHead.png" id="6_4k5b7"]
@@ -21,6 +20,10 @@
 [ext_resource type="AudioStream" uid="uid://dciff2t05ku54" path="res://systems/audio/SFX/hammer_hit_3.wav" id="15_e6ufk"]
 [ext_resource type="Script" uid="uid://dhowpvt3exf0x" path="res://systems/spawning/director_state_controller.gd" id="20_or7xq"]
 [ext_resource type="PackedScene" uid="uid://cjo05mudy1453" path="res://ui/WaveHUD.tscn" id="21_wavehud"]
+[ext_resource type="Script" uid="uid://bfmkqhr03rrju" path="res://systems/core/day_night_cycle_controller.gd" id="22_daynight"]
+[ext_resource type="Script" uid="uid://bb1tlvrewsa0a" path="res://systems/core/environment_manager.gd" id="23_envmgr"]
+[ext_resource type="Script" uid="uid://d0lth8in6hfvb" path="res://systems/core/building_manager.gd" id="24_buildmgr"]
+[ext_resource type="PackedScene" uid="uid://iys5k8v4l8dp" path="res://actors/enemies/active_enemy.tscn" id="25_activenemy"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_e5kgj"]
 sky_top_color = Color(0.03529412, 0.039215688, 0.2627451, 1)
@@ -35,23 +38,21 @@ background_mode = 1
 background_color = Color(0.00555238, 1.5281513e-06, 0.05974879, 1)
 sky = SubResource("Sky_gv3io")
 ambient_light_source = 2
-ambient_light_color = Color(0.39225048, 0.35659504, 0.99998933, 1)
-ambient_light_energy = 0.6
-tonemap_mode = 3
+ambient_light_color = Color(0.55, 0.68, 0.85, 1)
+ambient_light_energy = 0.45
+tonemap_mode = 2
 glow_enabled = true
-glow_intensity = 0.9
-glow_strength = 0.7
-glow_bloom = 0.2
+glow_intensity = 0.6
+glow_strength = 0.85
+glow_bloom = 0.15
 glow_blend_mode = 0
-fog_light_color = Color(0.11191606, 0.119363375, 0.16257763, 1)
+fog_light_color = Color(0.5, 0.6, 0.72, 1)
 fog_height = 4.0
 fog_height_density = 1.3
 fog_depth_begin = 42.0
 fog_depth_end = 45.0
 adjustment_enabled = true
-adjustment_brightness = 0.95
-adjustment_contrast = 1.15
-adjustment_saturation = 0.85
+adjustment_saturation = 1.05
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4k5b7"]
 render_priority = 0
@@ -158,13 +159,13 @@ albedo_color = Color(3.234443, 0.00192523, 2.6114624, 1)
 material = SubResource("StandardMaterial3D_58jgq")
 size = Vector3(0.2, 0.2, 0.2)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cut4f"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ejvia"]
 transparency = 1
 cull_mode = 2
 shading_mode = 0
 albedo_color = Color(0, 1, 0.4, 0.25)
 
-[sub_resource type="ImmediateMesh" id="ImmediateMesh_0cj56"]
+[sub_resource type="ImmediateMesh" id="ImmediateMesh_gxr7n"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_mtigy"]
 render_priority = 0
@@ -214,12 +215,11 @@ script = ExtResource("4_50hlt")
 player = NodePath("../Player")
 core_node = NodePath("../BaseCore")
 multimesh = NodePath("MultiMeshInstance3D")
-active_enemy_scene = ExtResource("4_4k5b7")
+active_enemy_scene = ExtResource("25_activenemy")
 simulation_processor = NodePath("../SwarmProcessor")
 promotion_processor = NodePath("../PromotionProcessor")
 voxel_terrain = NodePath("../VoxelTerrain")
 pool_size = 50
-max_concurrent_enemies = 50
 base_speed = 3.0
 enemy_scale = 0.8
 default_hp = 50.0
@@ -269,8 +269,8 @@ hit_sfx_attack_3_pool = Array[AudioStream]([ExtResource("15_e6ufk")])
 visible = false
 
 [node name="MeleeVisualizer3D" parent="Player/CombatComponent" index="3" unique_id=2042561060]
-material_override = SubResource("StandardMaterial3D_cut4f")
-mesh = SubResource("ImmediateMesh_0cj56")
+material_override = SubResource("StandardMaterial3D_ejvia")
+mesh = SubResource("ImmediateMesh_gxr7n")
 arc_resolution_segments = 16
 
 [node name="VoxelViewer" parent="Player" index="11" unique_id=220781735]
@@ -293,7 +293,7 @@ transform = Transform3D(0.55793303, 0.27572122, -0.78274095, -0.8143067, -3.5594
 transform = Transform3D(1, 0, 0, 0, 0.087155536, -0.9961916, 0, 0.9961916, 0.087155536, 0, 1.6208816, 0.0593987)
 
 [node name="Torso" parent="Player/Axyl/Visuals" parent_id_path=PackedInt32Array(1816063018, 915844938) index="5" unique_id=866137388]
-transform = Transform3D(1, 0, 0, 0, -0.34201896, -0.9396894, 0, 0.9396894, -0.34201896, 0.0015437336, 0.6061756, -0.113722295)
+transform = Transform3D(1, 0, 0, 0, -0.34201893, -0.93968934, 0, 0.93968934, -0.34201893, 0.0015437336, 0.6061756, -0.113722295)
 
 [node name="SwarmProcessor" type="Node3D" parent="." unique_id=4828911]
 script = ExtResource("10_teesn")
@@ -304,6 +304,7 @@ swarmer_body_radius = 1.0
 script = ExtResource("8_peekt")
 
 [node name="FogVignette" type="MeshInstance3D" parent="." unique_id=367477336 node_paths=PackedStringArray("player_node")]
+visible = false
 material_override = SubResource("ShaderMaterial_mtigy")
 extra_cull_margin = 16384.0
 mesh = SubResource("QuadMesh_ne1d3")
@@ -316,6 +317,24 @@ script = ExtResource("20_or7xq")
 horde_manager = NodePath("../HordeManager")
 base_core_node = NodePath("../BaseCore")
 total_wave_enemy_quota = 20
+
+[node name="DayNightCycleController" type="Node" parent="." unique_id=983471021 node_paths=PackedStringArray("director_controller")]
+script = ExtResource("22_daynight")
+director_controller = NodePath("../HordeDirector")
+day_duration = 5.0
+dusk_duration = 5.0
+dawn_duration = 5.0
+
+[node name="EnvironmentManager" type="Node" parent="." unique_id=457291834 node_paths=PackedStringArray("world_environment", "directional_light", "cycle_controller", "fog_vignette")]
+script = ExtResource("23_envmgr")
+world_environment = NodePath("../WorldEnvironment")
+directional_light = NodePath("../DirectionalLight3D")
+cycle_controller = NodePath("../DayNightCycleController")
+fog_vignette = NodePath("../FogVignette")
+
+[node name="BuildingManager" type="Node" parent="." unique_id=198471203 node_paths=PackedStringArray("cycle_controller")]
+script = ExtResource("24_buildmgr")
+cycle_controller = NodePath("../DayNightCycleController")
 
 [editable path="CameraTransitionLayer"]
 [editable path="Player"]

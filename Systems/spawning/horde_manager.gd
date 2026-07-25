@@ -82,6 +82,9 @@ var _init_index: int = 0
 const INIT_BATCH_SIZE: int = 2
 
 func _ready() -> void:
+	if not active_enemy_scene:
+		active_enemy_scene = load("res://actors/enemies/active_enemy.tscn") as PackedScene
+
 	positions.resize(pool_size)
 	velocities.resize(pool_size)
 	states.resize(pool_size)

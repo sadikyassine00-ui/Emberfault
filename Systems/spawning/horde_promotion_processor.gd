@@ -20,31 +20,31 @@ func process_promotions(manager: HordeManager) -> void:
 	var player_node: Node3D = manager.player
 	if not player_node:
 		return
-		
+
 	var player_pos: Vector3 = player_node.global_position
 	var p_flat: Vector2 = Vector2(player_pos.x, player_pos.z)
-	
+
 	var core_node: Node3D = manager.core_node
 	var core_pos: Vector3 = Vector3.ZERO
 	var has_core: bool = false
 	if core_node:
 		core_pos = core_node.global_position
 		has_core = true
-	
+
 	var promote_sq: float = manager.promote_dist * manager.promote_dist
 	var demote_sq: float = manager.demote_dist * manager.demote_dist
-	
+
 	var straggler_sq: float = straggler_distance * straggler_distance
 	var core_straggler_sq: float = core_straggler_distance * core_straggler_distance
 
 	var player_vel: Vector3 = player_node.get("velocity") if "velocity" in player_node else Vector3.ZERO
 	var heading_dir: Vector3 = Vector3.ZERO
-	
+
 	if player_vel.length_squared() > 0.1:
 		heading_dir = player_vel.normalized()
 	else:
 		heading_dir = - player_node.global_transform.basis.z.normalized()
-		
+
 	var heading_flat: Vector2 = Vector2(heading_dir.x, heading_dir.z).normalized()
 
 	var mm_inv_xform: Transform3D = Transform3D()
@@ -88,7 +88,7 @@ func process_promotions(manager: HordeManager) -> void:
 			current_pos = manager.positions[i]
 
 		dist_to_player_sq = current_pos.distance_squared_to(player_pos)
-		
+
 		var type: int = manager.enemy_types[i]
 
 		if state == 1:
@@ -132,7 +132,7 @@ func process_promotions(manager: HordeManager) -> void:
 	for idx in range(promoted_count):
 		var p_i: int = promoted_indices[idx]
 		var dist_sq: float = promoted_distances_sq[idx]
-		
+
 		if dist_sq > demote_sq:
 			manager.set_enemy_state(p_i, 1)
 			var n: ActiveEnemy = manager.index_to_node_map[p_i]
@@ -146,7 +146,7 @@ func process_promotions(manager: HordeManager) -> void:
 			promoted_indices[write_idx] = p_i
 			promoted_distances_sq[write_idx] = dist_sq
 			write_idx += 1
-			
+
 	promoted_count = write_idx
 
 	# PASS 3: Fill empty node wrappers (With Throttling)
@@ -154,36 +154,36 @@ func process_promotions(manager: HordeManager) -> void:
 	while free_node and unpromoted_count > 0:
 		if promotions_this_frame >= MAX_PROMOTIONS_PER_FRAME:
 			break
-			
+
 		var min_idx: int = 0
 		var min_val: float = unpromoted_distances_sq[0]
 		for idx in range(1, unpromoted_count):
 			if unpromoted_distances_sq[idx] < min_val:
 				min_val = unpromoted_distances_sq[idx]
 				min_idx = idx
-				
+
 		var target_i: int = unpromoted_candidates[min_idx]
 		manager.set_enemy_state(target_i, 2)
-		
+
 		var target_node: Node3D = player_node
 		if manager.enemy_types[target_i] == 0 and manager.core_node:
 			target_node = manager.core_node
 
 		free_node.activate(manager.positions[target_i], target_i, target_node, manager.speed_variances[target_i], manager.preferred_distances_sq[target_i], manager.orbital_speeds[target_i], manager)
-		
+
 		if manager.multimesh and manager.multimesh.multimesh:
 			var local_zero: Transform3D = mm_inv_xform * Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0.0, -1000.0, 0.0))
 			manager.multimesh.multimesh.set_instance_transform(target_i, local_zero)
-			
+
 		promoted_indices[promoted_count] = target_i
 		promoted_distances_sq[promoted_count] = min_val
 		promoted_count += 1
-		
+
 		# O(1) Fast Swap: Replaces expensive remove_at() memory shifting mechanics
 		unpromoted_candidates[min_idx] = unpromoted_candidates[unpromoted_count - 1]
 		unpromoted_distances_sq[min_idx] = unpromoted_distances_sq[unpromoted_count - 1]
 		unpromoted_count -= 1
-		
+
 		promotions_this_frame += 1
 		free_node = manager._get_free_node()
 
@@ -191,55 +191,55 @@ func process_promotions(manager: HordeManager) -> void:
 	while unpromoted_count > 0 and promoted_count > 0:
 		if promotions_this_frame >= MAX_PROMOTIONS_PER_FRAME:
 			break
-			
+
 		var min_un_idx: int = 0
 		var min_un_val: float = unpromoted_distances_sq[0]
 		for idx in range(1, unpromoted_count):
 			if unpromoted_distances_sq[idx] < min_un_val:
 				min_un_val = unpromoted_distances_sq[idx]
 				min_un_idx = idx
-				
+
 		var max_prom_idx: int = 0
 		var max_prom_val: float = promoted_distances_sq[0]
 		for idx in range(1, promoted_count):
 			if promoted_distances_sq[idx] > max_prom_val:
 				max_prom_val = promoted_distances_sq[idx]
 				max_prom_idx = idx
-				
+
 		if min_un_val < (max_prom_val - 4.0):
 			var target_to_promote: int = unpromoted_candidates[min_un_idx]
 			var target_to_demote: int = promoted_indices[max_prom_idx]
-			
+
 			var n: ActiveEnemy = manager.index_to_node_map[target_to_demote]
 			if n:
 				manager.set_enemy_state(target_to_demote, 1)
 				manager.set_enemy_pos_vel(target_to_demote, n.global_position, manager.velocities[target_to_demote])
-				
+
 				if manager.multimesh and manager.multimesh.multimesh:
 					var local_tf: Transform3D = mm_inv_xform * Transform3D(n.global_transform.basis, n.global_position)
 					manager.multimesh.multimesh.set_instance_transform(target_to_demote, local_tf)
 				n.deactivate()
-				
+
 				manager.set_enemy_state(target_to_promote, 2)
-				
+
 				var target_node: Node3D = player_node
 				if manager.enemy_types[target_to_promote] == 0 and manager.core_node:
 					target_node = manager.core_node
 
 				n.activate(manager.positions[target_to_promote], target_to_promote, target_node, manager.speed_variances[target_to_promote], manager.preferred_distances_sq[target_to_promote], manager.orbital_speeds[target_to_promote], manager)
-				
+
 				if manager.multimesh and manager.multimesh.multimesh:
 					var local_zero: Transform3D = mm_inv_xform * Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0.0, -1000.0, 0.0))
 					manager.multimesh.multimesh.set_instance_transform(target_to_promote, local_zero)
-					
+
 			promoted_indices[max_prom_idx] = target_to_promote
 			promoted_distances_sq[max_prom_idx] = min_un_val
-			
+
 			# O(1) Fast Swap out the processed candidate
 			unpromoted_candidates[min_un_idx] = unpromoted_candidates[unpromoted_count - 1]
 			unpromoted_distances_sq[min_un_idx] = unpromoted_distances_sq[unpromoted_count - 1]
 			unpromoted_count -= 1
-			
+
 			promotions_this_frame += 1
 		else:
 			break
