@@ -8,6 +8,12 @@ const BUS_SFX_HIGH: StringName = &"Combat_HighPriority"
 const BUS_SFX_SWARM: StringName = &"Combat_Swarm"
 const BUS_UI: StringName = &"UI"
 
+# --- DEFAULT BACKGROUND AUDIO ---
+@export_group("Default Background Audio")
+@export var default_music: AudioStream = preload("res://systems/audio/music/The_Snow_Queen.ogg")
+@export var default_ambience: AudioStream = preload("res://systems/audio/ambient/wind_sound.ogg")
+@export var default_fade_duration: float = 2.0
+
 # --- POOL SIZES ---
 @export_group("Pool Allocation")
 @export var sfx_3d_pool_size: int = 24
@@ -40,6 +46,12 @@ func _ready() -> void:
 	_setup_sfx_pools()
 	_setup_music_system()
 	_setup_ambient_system()
+
+	# Seamlessly play background music & wind ambient on boot
+	if default_music:
+		transition_to_music(default_music, default_fade_duration)
+	if default_ambience:
+		play_ambience(default_ambience, default_fade_duration)
 
 # ------------------------------------------------------------------------------
 # POOL INITIALIZATION (Runs strictly at boot / zero runtime heap allocations)
@@ -129,10 +141,16 @@ func play_sfx_2d(stream: AudioStream, bus_override: StringName = BUS_UI, pitch: 
 	player.play()
 
 # ------------------------------------------------------------------------------
-# MUSIC SYSTEM (Crossfading between Prep, Squeeze, Apex Breach)
+# MUSIC SYSTEM (Crossfading between tracks)
 # ------------------------------------------------------------------------------
 func transition_to_music(new_stream: AudioStream, fade_duration: float = 1.5) -> void:
-	if _active_music_player.stream == new_stream:
+	if new_stream == null:
+		return
+
+	if new_stream is AudioStreamOggVorbis:
+		new_stream.loop = true
+
+	if _active_music_player.stream == new_stream and _active_music_player.playing:
 		return
 
 	var incoming_player := _music_player_b if _active_music_player == _music_player_a else _music_player_a
@@ -146,33 +164,44 @@ func transition_to_music(new_stream: AudioStream, fade_duration: float = 1.5) ->
 
 	_music_tween = create_tween().set_parallel(true)
 	
-	# Fade out current active player
-	_music_tween.tween_property(_active_music_player, "volume_db", -80.0, fade_duration)
-	# Fade in incoming player
+	if _active_music_player.playing:
+		_music_tween.tween_property(_active_music_player, "volume_db", -80.0, fade_duration)
+		_music_tween.chain().tween_callback(Callable(_active_music_player, "stop"))
+
 	_music_tween.tween_property(incoming_player, "volume_db", 0.0, fade_duration)
 	
-	_music_tween.chain().tween_callback(Callable(_active_music_player, "stop"))
 	_active_music_player = incoming_player
 
 # ------------------------------------------------------------------------------
 # AMBIENCE PIPELINE
 # ------------------------------------------------------------------------------
 func play_ambience(stream: AudioStream, fade_duration: float = 2.0) -> void:
-	if _ambient_player.stream == stream:
-		return
-		
-	if fade_duration <= 0.0:
-		_ambient_player.stream = stream
-		_ambient_player.play()
+	if stream == null:
 		return
 
-	var tween := create_tween()
-	tween.tween_property(_ambient_player, "volume_db", -80.0, fade_duration)
-	tween.tween_callback(func():
+	if stream is AudioStreamOggVorbis:
+		stream.loop = true
+
+	if _ambient_player.stream == stream and _ambient_player.playing:
+		return
+
+	if fade_duration <= 0.0 or not _ambient_player.playing:
 		_ambient_player.stream = stream
+		_ambient_player.volume_db = -80.0 if fade_duration > 0.0 else 0.0
 		_ambient_player.play()
+		if fade_duration > 0.0:
+			var fade_in := create_tween()
+			fade_in.tween_property(_ambient_player, "volume_db", 0.0, fade_duration)
+		return
+
+	var old_player := _ambient_player
+	var tween := create_tween()
+	tween.tween_property(old_player, "volume_db", -80.0, fade_duration)
+	tween.tween_callback(func():
+		old_player.stream = stream
+		old_player.play()
 	)
-	tween.tween_property(_ambient_player, "volume_db", 0.0, fade_duration)
+	tween.tween_property(old_player, "volume_db", 0.0, fade_duration)
 
 # ------------------------------------------------------------------------------
 # GLOBAL BUS VOLUME CONTROL (Option menus)

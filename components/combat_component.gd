@@ -117,6 +117,8 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 
 	if hit_indices.size() > 0:
 		_route_batch_to_horde_manager(hit_indices, combo_step)
+		if combat_buffer:
+			combat_buffer.trigger_hit_impact(combo_step, tip_pos)
 
 func _route_batch_to_horde_manager(indices: PackedInt32Array, combo_step: int) -> void:
 	if not horde_manager: return
