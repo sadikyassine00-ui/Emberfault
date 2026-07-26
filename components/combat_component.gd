@@ -101,6 +101,23 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 	var rad_sq: float = active_radius * active_radius
 	var arc_dot_threshold: float = cos(deg_to_rad(strike_arc_degrees * 0.5))
 
+	# --- 🪓 HARVESTABLE RESOURCE SWEEP ---
+	var harvestables := get_tree().get_nodes_in_group("harvestables")
+	for node in harvestables:
+		if is_instance_valid(node) and node is HarvestableResource:
+			var harvest_node := node as HarvestableResource
+			var h_pos: Vector3 = harvest_node.global_position
+			var to_node := Vector3(h_pos.x - origin.x, 0.0, h_pos.z - origin.z)
+			var dist_sq: float = to_node.length_squared()
+
+			if dist_sq <= rad_sq:
+				if combo_step == 2 or dist_sq < 0.25:
+					harvest_node.harvest(1)
+				else:
+					var dir := to_node.normalized()
+					if dir.dot(forward) >= arc_dot_threshold:
+						harvest_node.harvest(1)
+
 	for i in range(horde_manager.highest_active_index):
 		if horde_manager.states[i] != 0:
 			var target_pos: Vector3 = horde_manager.positions[i]

@@ -1,3 +1,4 @@
+@tool
 extends Node
 class_name DayNightCycleController
 
@@ -20,6 +21,16 @@ enum CyclePhase {
 
 @export_category("Bindings")
 @export var director_controller: Node # Node export avoids class-cache indexing race conditions
+
+@export_category("Level Initial Starting Phase Setup")
+@export_enum("DAY", "DUSK", "NIGHT", "DAWN") var initial_starting_phase: int = 0:
+	set(v):
+		initial_starting_phase = v
+		if Engine.is_editor_hint():
+			progress_updated.emit(v as CyclePhase, 0.0)
+			var env_mgr = _find_node_in_tree("EnvironmentManager")
+			if env_mgr and env_mgr.has_method("update_environment_live"):
+				env_mgr.update_environment_live()
 
 @export_category("Phase Duration Tuning (Seconds)")
 @export var day_duration: float = 120.0
@@ -45,7 +56,10 @@ func _ready() -> void:
 		if wave_sig and not wave_sig.is_connected(_on_director_wave_completed):
 			wave_sig.connect(_on_director_wave_completed)
 
-	_start_phase(CyclePhase.DAY)
+	if not Engine.is_editor_hint():
+		_start_phase(clamp(initial_starting_phase, 0, 3) as CyclePhase)
+	else:
+		progress_updated.emit(clamp(initial_starting_phase, 0, 3) as CyclePhase, 0.0)
 
 func _find_node_in_tree(node_name: String) -> Node:
 	if not is_inside_tree():
@@ -56,6 +70,9 @@ func _find_node_in_tree(node_name: String) -> Node:
 	return null
 
 func _physics_process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
+
 	# Throttled ~10Hz progress updates (0.1s interval) for zero-allocation performance
 	tick_accumulator += delta
 	if tick_accumulator >= 0.1:

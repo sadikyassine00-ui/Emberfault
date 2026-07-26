@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://c6fwbiewmxv47"]
+
+[ext_resource type="Script" uid="uid://dum67tqneu6tt" path="res://systems/core/harvestable_resource.gd" id="1_xvyur"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_11h8l"]
+albedo_color = Color(0.99380416, 0.5565054, 0, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_elllp"]
+
+[node name="Tree" type="Node3D" unique_id=1551113582]
+
+[node name="mesh" type="MeshInstance3D" parent="." unique_id=1072288220]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_11h8l")
+mesh = SubResource("CylinderMesh_elllp")
+
+[node name="HarvestableResource" type="Node3D" parent="." unique_id=1422818977]
+script = ExtResource("1_xvyur")
+max_durability = 3

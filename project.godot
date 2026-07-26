@@ -30,6 +30,7 @@ PhantomCameraManager="*uid://duq6jhf6unyis"
 JuiceDirector="*uid://vfty81c8aptu"
 AudioManager="*uid://c0dxtrad0qx03"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
+ResourceManager="*res://systems/core/resource_manager.gd"
 
 [display]
 
@@ -115,10 +116,12 @@ attack={
 textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+lights_and_shadows/directional_shadow/size=1024
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=0
 lights_and_shadows/positional_shadow/soft_shadow_filter_quality=0
 2d/snap/snap_2d_transforms_to_pixel=true
 2d/snap/snap_2d_vertices_to_pixel=true
+lights_and_shadows/positional_shadow/size=512
 
 [shader_globals]
 
