@@ -4,7 +4,7 @@
 [ext_resource type="Theme" uid="uid://dcifv02w1nlgu" path="res://default_theme.tres" id="2_invtheme"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glass"]
-bg_color = Color(0.06, 0.08, 0.14, 0.88)
+bg_color = Color(0.06, 0.08, 0.14, 0.90)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -14,7 +14,7 @@ corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
-shadow_color = Color(0, 0, 0, 0.45)
+shadow_color = Color(0, 0, 0, 0.5)
 shadow_size = 8
 
 [node name="InventoryUI" type="Control" unique_id=782914023]
@@ -22,8 +22,8 @@ layout_mode = 3
 anchors_preset = 0
 offset_left = 24.0
 offset_top = 24.0
-offset_right = 284.0
-offset_bottom = 174.0
+offset_right = 414.0
+offset_bottom = 454.0
 theme = ExtResource("2_invtheme")
 script = ExtResource("1_invscript")
 
@@ -59,6 +59,6 @@ layout_mode = 2
 [node name="GridContainer" type="GridContainer" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=409182471]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/h_separation = 10
-theme_override_constants/v_separation = 10
-columns = 4
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+columns = 6

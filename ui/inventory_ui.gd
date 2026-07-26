@@ -3,11 +3,15 @@ class_name InventoryUI
 
 @onready var grid_container: GridContainer = %GridContainer
 
-# Map resource types to slot UI nodes
-var slots: Dictionary = {}
+const MAX_SLOTS: int = 36 # 6x6 Grid
+
+# Slot UI references (0 to 35)
+var slot_panels: Array[PanelContainer] = []
+# Mapping of ResourceType ID to assigned slot index (e.g. {0: 0, 1: 1})
+var assigned_slots: Dictionary = {}
 var icon_textures: Dictionary = {}
 
-# Slot configuration data
+# Resource config
 const RESOURCE_CONFIG = {
 	0: {"name": "Wood", "color": Color(0.68, 0.46, 0.24), "border": Color(0.85, 0.60, 0.35)}, # WOOD
 	1: {"name": "Stone", "color": Color(0.55, 0.58, 0.65), "border": Color(0.75, 0.78, 0.85)}, # STONE
@@ -16,7 +20,7 @@ const RESOURCE_CONFIG = {
 
 func _ready() -> void:
 	_generate_placeholder_icons()
-	_build_grid_slots()
+	_build_6x6_grid()
 	_refresh_all_totals()
 
 	# Connect reactively to ResourceManager signal (NO _process polling!)
@@ -45,13 +49,11 @@ func _create_icon_texture(fill_color: Color, border_color: Color, type_id: int) 
 		for y in range(64):
 			var p := Vector2i(x, y)
 			var d := (p - center).length()
-			
-			# Circular badge icon with stylized inner emblem
+
 			if d <= 26.0:
 				var alpha: float = smoothstep(26.0, 24.0, d)
 				var c := fill_color
-				
-				# Add inner visual pattern based on type
+
 				if type_id == 0: # Wood: Ring grain
 					if abs(d - 12.0) < 2.0 or abs(d - 19.0) < 1.5:
 						c = c.darkened(0.25)
@@ -74,62 +76,59 @@ func _create_icon_texture(fill_color: Color, border_color: Color, type_id: int) 
 
 	return ImageTexture.create_from_image(img)
 
-## Construct grid slots dynamically
-func _build_grid_slots() -> void:
+## Build 36 empty grid slots (6 columns x 6 rows)
+func _build_6x6_grid() -> void:
 	if not grid_container:
 		return
 
-	# Clear existing children if any
+	grid_container.columns = 6
+
 	for child in grid_container.get_children():
 		child.queue_free()
 
-	slots.clear()
+	slot_panels.clear()
+	assigned_slots.clear()
 
-	for type_id in RESOURCE_CONFIG.keys():
-		var slot_panel := _create_slot_node(type_id)
-		grid_container.add_child(slot_panel)
-		slots[type_id] = slot_panel
+	for i in range(MAX_SLOTS):
+		var panel := _create_empty_slot_node(i)
+		grid_container.add_child(panel)
+		slot_panels.append(panel)
 
-func _create_slot_node(type_id: int) -> PanelContainer:
-	var cfg = RESOURCE_CONFIG[type_id]
+func _create_empty_slot_node(index: int) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(68, 68)
+	panel.name = "Slot_" + str(index)
+	panel.custom_minimum_size = Vector2(52, 52)
 
-	# Custom StyleBox for individual slot card
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.10, 0.16, 0.85)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = Color(0.25, 0.35, 0.55, 0.6)
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_right = 6
-	style.corner_radius_bottom_left = 6
+	style.bg_color = Color(0.06, 0.08, 0.14, 0.80)
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = Color(0.20, 0.30, 0.48, 0.45)
+	style.corner_radius_top_left = 5
+	style.corner_radius_top_right = 5
+	style.corner_radius_bottom_right = 5
+	style.corner_radius_bottom_left = 5
 	panel.add_theme_stylebox_override("panel", style)
 
-	# Main Margin Container
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 6)
-	margin.add_theme_constant_override("margin_top", 6)
-	margin.add_theme_constant_override("margin_right", 6)
-	margin.add_theme_constant_override("margin_bottom", 6)
+	margin.add_theme_constant_override("margin_left", 4)
+	margin.add_theme_constant_override("margin_top", 4)
+	margin.add_theme_constant_override("margin_right", 4)
+	margin.add_theme_constant_override("margin_bottom", 4)
 	panel.add_child(margin)
 
-	# Icon TextureRect
 	var icon_rect := TextureRect.new()
 	icon_rect.name = "IconRect"
-	icon_rect.texture = icon_textures[type_id]
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon_rect.custom_minimum_size = Vector2(44, 44)
-	icon_rect.modulate = Color(1, 1, 1, 0.35) # Dimmed when empty
+	icon_rect.custom_minimum_size = Vector2(34, 34)
+	icon_rect.visible = false # Hidden when empty
 	margin.add_child(icon_rect)
 
-	# Bottom-Right Amount Label Container
 	var label_container := Control.new()
-	label_container.layout_mode = 1 # Anchors mode
+	label_container.layout_mode = 1
 	label_container.anchors_preset = PRESET_FULL_RECT
 	margin.add_child(label_container)
 
@@ -141,7 +140,7 @@ func _create_slot_node(type_id: int) -> PanelContainer:
 	amount_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	amount_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	amount_label.text = ""
-	amount_label.add_theme_font_size_override("font_size", 13)
+	amount_label.add_theme_font_size_override("font_size", 12)
 	amount_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	amount_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
 	amount_label.add_theme_constant_override("outline_size", 4)
@@ -162,20 +161,46 @@ func _on_resource_changed(type: int, _amount_changed: int, current_total: int) -
 	_update_slot(type, current_total)
 
 func _update_slot(type_id: int, total: int) -> void:
-	if not slots.has(type_id):
-		return
-
-	var panel: PanelContainer = slots[type_id]
-	var icon_rect: TextureRect = panel.find_child("IconRect", true, false) as TextureRect
-	var amount_label: Label = panel.find_child("AmountLabel", true, false) as Label
-
 	if total > 0:
-		if icon_rect:
-			icon_rect.modulate = Color(1.0, 1.0, 1.0, 1.0) # Full brightness when owned
-		if amount_label:
-			amount_label.text = str(total)
+		# If item is not yet assigned a slot in the grid, append it to the first free slot
+		if not assigned_slots.has(type_id):
+			var free_index := _find_first_free_slot()
+			if free_index != -1:
+				assigned_slots[type_id] = free_index
+
+		if assigned_slots.has(type_id):
+			var slot_idx: int = assigned_slots[type_id]
+			var panel := slot_panels[slot_idx]
+			var icon_rect: TextureRect = panel.find_child("IconRect", true, false) as TextureRect
+			var amount_label: Label = panel.find_child("AmountLabel", true, false) as Label
+
+			if icon_rect:
+				icon_rect.texture = icon_textures[type_id]
+				icon_rect.visible = true
+				icon_rect.modulate = Color(1.0, 1.0, 1.0, 1.0)
+
+			if amount_label:
+				amount_label.text = str(total)
 	else:
-		if icon_rect:
-			icon_rect.modulate = Color(1.0, 1.0, 1.0, 0.35) # Dimmed when empty
-		if amount_label:
-			amount_label.text = ""
+		# If count drops to 0, clear the slot
+		if assigned_slots.has(type_id):
+			var slot_idx: int = assigned_slots[type_id]
+			var panel := slot_panels[slot_idx]
+			var icon_rect: TextureRect = panel.find_child("IconRect", true, false) as TextureRect
+			var amount_label: Label = panel.find_child("AmountLabel", true, false) as Label
+
+			if icon_rect:
+				icon_rect.texture = null
+				icon_rect.visible = false
+
+			if amount_label:
+				amount_label.text = ""
+
+			assigned_slots.erase(type_id)
+
+func _find_first_free_slot() -> int:
+	var used_indices := assigned_slots.values()
+	for i in range(MAX_SLOTS):
+		if not (i in used_indices):
+			return i
+	return -1
