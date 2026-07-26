@@ -20,42 +20,15 @@ func harvest(damage: int = 1) -> void:
 		return
 
 	current_durability -= damage
-	var hp_percent: float = maxf(0.0, (float(current_durability) / float(max_durability)) * 100.0)
-
-	print("[HARVEST] Hit \"%s\" | Damage: %d | Durability: %d/%d (%.1f%%)" % [
-		resource_name,
-		damage,
-		maxf(0.0, current_durability),
-		max_durability,
-		hp_percent
-	])
 
 	if current_durability <= 0:
 		_grant_and_destroy()
 
 func _grant_and_destroy() -> void:
-	var res_type_name: String = "WOOD"
-	match resource_type:
-		0: res_type_name = "WOOD"
-		1: res_type_name = "STONE"
-		2: res_type_name = "ENERGY_CORES"
-
-	var total_count: int = 0
 	if is_inside_tree():
 		var res_mgr = get_tree().root.get_node_or_null("ResourceManager")
-		if res_mgr:
-			if res_mgr.has_method("add_resource"):
-				res_mgr.add_resource(resource_type, yield_amount)
-			if res_mgr.has_method("get_resource"):
-				total_count = res_mgr.get_resource(resource_type)
-
-	print("[HARVEST COMPLETE] Destroyed \"%s\" | Gained: +%d %s | Total Inventory: %d %s" % [
-		resource_name,
-		yield_amount,
-		res_type_name,
-		total_count,
-		res_type_name
-	])
+		if res_mgr and res_mgr.has_method("add_resource"):
+			res_mgr.add_resource(resource_type, yield_amount)
 
 	harvested.emit(resource_type, yield_amount)
 
