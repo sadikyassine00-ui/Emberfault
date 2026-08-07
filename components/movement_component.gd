@@ -87,18 +87,28 @@ func handle_physics(direction: Vector3, wants_to_jump: bool, wants_to_dash: bool
 
 	parent.move_and_slide()
 
+func _get_core_manager() -> WeaponCoreManager:
+	if parent:
+		return parent.find_child("WeaponCoreManager", true, false) as WeaponCoreManager
+	return null
+
 func start_dash(direction: Vector3) -> void:
 	is_dashing = true
+	var core_mgr := _get_core_manager()
+	var speed_mult := core_mgr.get_dash_speed_multiplier() if core_mgr else 1.0
+	var cd_mult := core_mgr.get_dash_cooldown_multiplier() if core_mgr else 1.0
+
 	dash_timer = dash_duration
-	dash_cooldown_timer = dash_cooldown
+	dash_cooldown_timer = dash_cooldown * cd_mult
 
 	var dash_dir = direction
 	if dash_dir == Vector3.ZERO:
 		# Safeguard rotation fallback using the visuals node reference directly
 		dash_dir = -visuals.global_transform.basis.z.normalized()
 
-	parent.velocity.x = dash_dir.x * dash_speed
-	parent.velocity.z = dash_dir.z * dash_speed
+	var effective_speed := dash_speed * speed_mult
+	parent.velocity.x = dash_dir.x * effective_speed
+	parent.velocity.z = dash_dir.z * effective_speed
 	parent.velocity.y = 0
 
 func _handle_step_up(direction: Vector3) -> void:

@@ -1,64 +1,637 @@
-[gd_scene load_steps=4 format=3 uid="uid://ch78i2yimiwvy"]
+[gd_scene format=3 uid="uid://ch78i2yimiwvy"]
 
 [ext_resource type="Script" uid="uid://blb2uhw5mb61w" path="res://ui/inventory_ui.gd" id="1_invscript"]
 [ext_resource type="Theme" uid="uid://dcifv02w1nlgu" path="res://default_theme.tres" id="2_invtheme"]
+[ext_resource type="Texture2D" uid="uid://cc3ppmn1micm7" path="res://Art/inventory_ui/top_left_deco.png" id="3_80bpo"]
+[ext_resource type="Texture2D" uid="uid://3lpuobpaw5na" path="res://Art/inventory_ui/top_middle_deco.png" id="4_ihvlr"]
+[ext_resource type="Texture2D" uid="uid://cin17c1uoxlu4" path="res://Art/inventory_ui/top_right_deco.png" id="5_iecdl"]
+[ext_resource type="Texture2D" uid="uid://dbcfl8uwfion6" path="res://Art/inventory_ui/bottom_left_deco.png" id="6_nlis4"]
+[ext_resource type="Texture2D" uid="uid://dlrou7effkywa" path="res://Art/inventory_ui/left_middle.png" id="6_tnfuc"]
+[ext_resource type="Texture2D" uid="uid://cft7tvncnegmg" path="res://Art/inventory_ui/middle_middle.png" id="7_bctsd"]
+[ext_resource type="Texture2D" uid="uid://dmi25vovbcfvb" path="res://Art/inventory_ui/bottom_middle_deco.png" id="7_tnfuc"]
+[ext_resource type="Texture2D" uid="uid://bmmf0omqj4jbg" path="res://Art/inventory_ui/bottom_right_deco.png" id="8_bctsd"]
+[ext_resource type="Texture2D" uid="uid://sryhe4s3r28l" path="res://Art/inventory_ui/right_middle.png" id="8_erh1o"]
+[ext_resource type="Texture2D" uid="uid://bvpph4x5porsk" path="res://Art/inventory_ui/benner_left.png" id="12_b2gvf"]
+[ext_resource type="Texture2D" uid="uid://bk4hyvox4ekba" path="res://Art/inventory_ui/banner_middle.png" id="13_oke5c"]
+[ext_resource type="Texture2D" uid="uid://d1dsjr23afpot" path="res://Art/inventory_ui/benner_right.png" id="14_05e40"]
+[ext_resource type="Texture2D" uid="uid://c6v157cu151dp" path="res://Art/inventory_ui/20250420manaSoul9SlicesC-Sheet.png" id="15_oke5c"]
+[ext_resource type="Texture2D" uid="uid://c1itembha6" path="res://Art/inventory_ui/single_item_bg.png" id="16_itembg"]
+[ext_resource type="Texture2D" uid="uid://bvwg5qcipqtfy" path="res://Art/inventory_ui/tab_bg.png" id="17_tabbg"]
+[ext_resource type="Texture2D" uid="uid://culpkajgk5i5q" path="res://Art/inventory_ui/tab_active.png" id="18_tabactive"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glass"]
-bg_color = Color(0.06, 0.08, 0.14, 0.90)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.3, 0.45, 0.7, 0.6)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0, 0, 0, 0.5)
-shadow_size = 8
+[sub_resource type="AtlasTexture" id="AtlasTexture_05e40"]
+atlas = ExtResource("15_oke5c")
+region = Rect2(0, 0, 30, 30)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oke5c"]
+atlas = ExtResource("15_oke5c")
+region = Rect2(30, 0, 36, 30)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1fs08"]
+atlas = ExtResource("15_oke5c")
+region = Rect2(66, 0, 30, 30)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dnphn"]
+atlas = ExtResource("15_oke5c")
+region = Rect2(0, 30, 30, 36)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bskqg"]
+atlas = ExtResource("15_oke5c")
+region = Rect2(28, 30, 30, 36)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0aen0"]
+atlas = ExtResource("15_oke5c")
+region = Rect2(66, 30, 30, 36)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mcrtf"]
+atlas = ExtResource("15_oke5c")
+region = Rect2(0, 66, 30, 30)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xwm83"]
+atlas = ExtResource("15_oke5c")
+region = Rect2(30, 66, 36, 30)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y2isc"]
+atlas = ExtResource("15_oke5c")
+region = Rect2(66, 66, 30, 30)
 
 [node name="InventoryUI" type="Control" unique_id=782914023]
+texture_filter = 1
 layout_mode = 3
-anchors_preset = 0
-offset_left = 24.0
-offset_top = 24.0
-offset_right = 414.0
-offset_bottom = 454.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme = ExtResource("2_invtheme")
 script = ExtResource("1_invscript")
 
-[node name="PanelContainer" type="PanelContainer" parent="." unique_id=982147102]
+[node name="LayoutBox" type="VBoxContainer" parent="." unique_id=837886620]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -452.0
+offset_top = -283.0
+offset_right = -292.0
+offset_bottom = -183.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(6.246115, 6.36)
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="TopHeader" type="HBoxContainer" parent="LayoutBox" unique_id=252546176]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="LayoutBox/TopHeader" unique_id=1206094481]
+layout_mode = 2
+texture = ExtResource("3_80bpo")
+stretch_mode = 3
+
+[node name="MiddleBridge" type="TextureRect" parent="LayoutBox/TopHeader" unique_id=1969154458]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = ExtResource("4_ihvlr")
+stretch_mode = 1
+
+[node name="RightCorner" type="TextureRect" parent="LayoutBox/TopHeader" unique_id=250582225]
+layout_mode = 2
+texture = ExtResource("5_iecdl")
+
+[node name="Middle" type="HBoxContainer" parent="LayoutBox" unique_id=1600717842]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="LayoutBox/Middle" unique_id=435561686]
+layout_mode = 2
+texture = ExtResource("6_tnfuc")
+
+[node name="MiddleBridge" type="TextureRect" parent="LayoutBox/Middle" unique_id=480527178]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = ExtResource("7_bctsd")
+
+[node name="RightCorner" type="TextureRect" parent="LayoutBox/Middle" unique_id=83789906]
+layout_mode = 2
+texture = ExtResource("8_erh1o")
+
+[node name="BottomFooter" type="HBoxContainer" parent="LayoutBox" unique_id=2029509265]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="LayoutBox/BottomFooter" unique_id=1488527321]
+layout_mode = 2
+texture = ExtResource("6_nlis4")
+
+[node name="MiddleBridge" type="TextureRect" parent="LayoutBox/BottomFooter" unique_id=1729531025]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = ExtResource("7_tnfuc")
+
+[node name="RightCorner" type="TextureRect" parent="LayoutBox/BottomFooter" unique_id=683419397]
+layout_mode = 2
+texture = ExtResource("8_bctsd")
+
+[node name="BannerContainer" type="HBoxContainer" parent="." unique_id=1587096472]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -202.0
+offset_top = -288.0
+offset_right = -82.0
+offset_bottom = -266.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(4, 4)
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="BannerContainer" unique_id=1922379368]
+layout_mode = 2
+texture = ExtResource("12_b2gvf")
+stretch_mode = 3
+
+[node name="MiddleBridge" type="TextureRect" parent="BannerContainer" unique_id=1181641010]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = ExtResource("13_oke5c")
+stretch_mode = 1
+
+[node name="TitleLabel" type="Label" parent="BannerContainer/MiddleBridge" unique_id=1144883920]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_glass")
+theme_override_colors/font_color = Color(0.980392, 0.941176, 0.819608, 1)
+theme_override_colors/font_shadow_color = Color(0.121569, 0.0823529, 0.0431373, 0.8)
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 16
+text = "INVENTORY"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="MarginContainer" type="MarginContainer" parent="PanelContainer" unique_id=149810234]
+[node name="RightCorner" type="TextureRect" parent="BannerContainer" unique_id=1815012933]
 layout_mode = 2
-theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 12
+texture = ExtResource("14_05e40")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer" unique_id=891247104]
-layout_mode = 2
-theme_override_constants/separation = 10
+[node name="TabHeaderBox" type="HBoxContainer" parent="." unique_id=1948201847]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -210.0
+offset_top = -192.99998
+offset_right = 164.0
+offset_bottom = -160.99998
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1.1649976, 1.2)
+theme_override_constants/separation = 8
+alignment = 1
 
-[node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=109284712]
+[node name="ItemsTab" type="TextureButton" parent="TabHeaderBox" unique_id=1492018472]
+custom_minimum_size = Vector2(92, 32)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 17
-text = "INVENTORY [I]"
+texture_normal = ExtResource("18_tabactive")
+stretch_mode = 3
 
-[node name="HSeparator" type="HSeparator" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=309182471]
-layout_mode = 2
+[node name="Label" type="Label" parent="TabHeaderBox/ItemsTab" unique_id=592018374]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.980392, 0.941176, 0.819608, 1)
+theme_override_colors/font_shadow_color = Color(0.121569, 0.0823529, 0.0431373, 0.8)
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 16
+text = "ITEMS"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="GridContainer" type="GridContainer" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=409182471]
-unique_name_in_owner = true
+[node name="GearTab" type="TextureButton" parent="TabHeaderBox" unique_id=1849201837]
+custom_minimum_size = Vector2(92, 32)
 layout_mode = 2
-theme_override_constants/h_separation = 6
-theme_override_constants/v_separation = 6
-columns = 6
+texture_normal = ExtResource("17_tabbg")
+stretch_mode = 3
+
+[node name="Label" type="Label" parent="TabHeaderBox/GearTab" unique_id=749201948]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.980392, 0.941176, 0.819608, 1)
+theme_override_colors/font_shadow_color = Color(0.121569, 0.0823529, 0.0431373, 0.8)
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 16
+text = "GEAR"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MiscTab" type="TextureButton" parent="TabHeaderBox" unique_id=129401948]
+custom_minimum_size = Vector2(92, 32)
+layout_mode = 2
+texture_normal = ExtResource("17_tabbg")
+stretch_mode = 3
+
+[node name="Label" type="Label" parent="TabHeaderBox/MiscTab" unique_id=384920194]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.980392, 0.941176, 0.819608, 1)
+theme_override_colors/font_shadow_color = Color(0.121569, 0.0823529, 0.0431373, 0.8)
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 16
+text = "MISC"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ItemsPanelBox" type="VBoxContainer" parent="." unique_id=128243868]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -163.0
+offset_top = -154.00002
+offset_right = 24.0
+offset_bottom = 14.75
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(2.0000012, 2.3000007)
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="TopHeader" type="HBoxContainer" parent="ItemsPanelBox" unique_id=1640520011]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="ItemsPanelBox/TopHeader" unique_id=374519695]
+layout_mode = 2
+texture = SubResource("AtlasTexture_05e40")
+stretch_mode = 3
+
+[node name="MiddleBridge" type="TextureRect" parent="ItemsPanelBox/TopHeader" unique_id=291889243]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = SubResource("AtlasTexture_oke5c")
+stretch_mode = 1
+
+[node name="RightCorner" type="TextureRect" parent="ItemsPanelBox/TopHeader" unique_id=1172616401]
+layout_mode = 2
+texture = SubResource("AtlasTexture_1fs08")
+
+[node name="Middle" type="HBoxContainer" parent="ItemsPanelBox" unique_id=1243338054]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="ItemsPanelBox/Middle" unique_id=1655584165]
+layout_mode = 2
+texture = SubResource("AtlasTexture_dnphn")
+
+[node name="MiddleBridge" type="TextureRect" parent="ItemsPanelBox/Middle" unique_id=1537005261]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = SubResource("AtlasTexture_bskqg")
+
+[node name="ItemGridMargin" type="MarginContainer" parent="ItemsPanelBox/Middle/MiddleBridge" unique_id=1847192841]
+z_index = 10
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1.5258789e-05
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1.15, 1)
+pivot_offset_ratio = Vector2(0.5, 0.5)
+
+[node name="ItemGrid" type="GridContainer" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin" unique_id=918274615]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 2
+theme_override_constants/v_separation = 2
+columns = 5
+
+[node name="Slot_0" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=1968776550]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_1" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=1522950167]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_2" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=2119665374]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_3" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=628625129]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_4" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=1130635179]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_5" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=892305141]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_6" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=1748291034]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_7" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=381920481]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_8" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=982104523]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_9" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=1492018374]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_10" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=592018471]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_11" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=1849201948]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_12" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=749201839]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_13" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=129401837]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_14" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=384920184]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_15" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=194820194]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_16" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=648201948]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_17" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=148201948]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_18" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=948201948]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="Slot_19" type="TextureRect" parent="ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid" unique_id=348201948]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("16_itembg")
+expand_mode = 1
+
+[node name="RightCorner" type="TextureRect" parent="ItemsPanelBox/Middle" unique_id=1663185495]
+layout_mode = 2
+texture = SubResource("AtlasTexture_0aen0")
+
+[node name="BottomFooter" type="HBoxContainer" parent="ItemsPanelBox" unique_id=1288592348]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="ItemsPanelBox/BottomFooter" unique_id=1243336529]
+layout_mode = 2
+texture = SubResource("AtlasTexture_mcrtf")
+
+[node name="MiddleBridge" type="TextureRect" parent="ItemsPanelBox/BottomFooter" unique_id=468033764]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = SubResource("AtlasTexture_xwm83")
+
+[node name="RightCorner" type="TextureRect" parent="ItemsPanelBox/BottomFooter" unique_id=37444387]
+layout_mode = 2
+texture = SubResource("AtlasTexture_y2isc")
+
+[node name="CharStatsPanel" type="VBoxContainer" parent="." unique_id=1622465643]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -395.0
+offset_top = -153.00002
+offset_right = -207.99976
+offset_bottom = 15.7499695
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1.1800005, 2.2599995)
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="TopHeader" type="HBoxContainer" parent="CharStatsPanel" unique_id=2028832075]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="CharStatsPanel/TopHeader" unique_id=745964526]
+layout_mode = 2
+texture = SubResource("AtlasTexture_05e40")
+stretch_mode = 3
+
+[node name="MiddleBridge" type="TextureRect" parent="CharStatsPanel/TopHeader" unique_id=1033025717]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = SubResource("AtlasTexture_oke5c")
+stretch_mode = 1
+
+[node name="RightCorner" type="TextureRect" parent="CharStatsPanel/TopHeader" unique_id=901632587]
+layout_mode = 2
+texture = SubResource("AtlasTexture_1fs08")
+
+[node name="Middle" type="HBoxContainer" parent="CharStatsPanel" unique_id=756974086]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="CharStatsPanel/Middle" unique_id=192651999]
+layout_mode = 2
+texture = SubResource("AtlasTexture_dnphn")
+
+[node name="MiddleBridge" type="TextureRect" parent="CharStatsPanel/Middle" unique_id=981061972]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = SubResource("AtlasTexture_bskqg")
+
+[node name="RightCorner" type="TextureRect" parent="CharStatsPanel/Middle" unique_id=1562634539]
+layout_mode = 2
+texture = SubResource("AtlasTexture_0aen0")
+
+[node name="BottomFooter" type="HBoxContainer" parent="CharStatsPanel" unique_id=1253299709]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="CharStatsPanel/BottomFooter" unique_id=1368389783]
+layout_mode = 2
+texture = SubResource("AtlasTexture_mcrtf")
+
+[node name="MiddleBridge" type="TextureRect" parent="CharStatsPanel/BottomFooter" unique_id=200793989]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = SubResource("AtlasTexture_xwm83")
+
+[node name="RightCorner" type="TextureRect" parent="CharStatsPanel/BottomFooter" unique_id=1779038713]
+layout_mode = 2
+texture = SubResource("AtlasTexture_y2isc")
+
+[node name="ItemDescPanel" type="VBoxContainer" parent="." unique_id=609794393]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 222.00006
+offset_top = -154.0
+offset_right = 409.00024
+offset_bottom = 14.75
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1.4200025, 2.3000004)
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="TopHeader" type="HBoxContainer" parent="ItemDescPanel" unique_id=395453233]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="ItemDescPanel/TopHeader" unique_id=385414121]
+layout_mode = 2
+texture = SubResource("AtlasTexture_05e40")
+stretch_mode = 3
+
+[node name="MiddleBridge" type="TextureRect" parent="ItemDescPanel/TopHeader" unique_id=1707132395]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = SubResource("AtlasTexture_oke5c")
+stretch_mode = 1
+
+[node name="RightCorner" type="TextureRect" parent="ItemDescPanel/TopHeader" unique_id=1141210924]
+layout_mode = 2
+texture = SubResource("AtlasTexture_1fs08")
+
+[node name="Middle" type="HBoxContainer" parent="ItemDescPanel" unique_id=843842503]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="ItemDescPanel/Middle" unique_id=2132622315]
+layout_mode = 2
+texture = SubResource("AtlasTexture_dnphn")
+
+[node name="MiddleBridge" type="TextureRect" parent="ItemDescPanel/Middle" unique_id=590569542]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = SubResource("AtlasTexture_bskqg")
+
+[node name="RightCorner" type="TextureRect" parent="ItemDescPanel/Middle" unique_id=1067769100]
+layout_mode = 2
+texture = SubResource("AtlasTexture_0aen0")
+
+[node name="BottomFooter" type="HBoxContainer" parent="ItemDescPanel" unique_id=1104484567]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LeftCorner" type="TextureRect" parent="ItemDescPanel/BottomFooter" unique_id=446952571]
+layout_mode = 2
+texture = SubResource("AtlasTexture_mcrtf")
+
+[node name="MiddleBridge" type="TextureRect" parent="ItemDescPanel/BottomFooter" unique_id=981810247]
+layout_mode = 2
+size_flags_horizontal = 3
+texture = SubResource("AtlasTexture_xwm83")
+
+[node name="RightCorner" type="TextureRect" parent="ItemDescPanel/BottomFooter" unique_id=55293454]
+layout_mode = 2
+texture = SubResource("AtlasTexture_y2isc")

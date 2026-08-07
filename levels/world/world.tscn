@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://8owkf4gyoy0v" path="res://actors/player/player.tscn" id="4_2vqi4"]
 [ext_resource type="PackedScene" uid="uid://bnle1pmef2w1k" path="res://ui/camera_transition_screen.tscn" id="4_28nu6"]
 [ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="4_f5tsa"]
+[ext_resource type="PackedScene" path="res://ui/WeaponCoreDraftUI.tscn" id="5_draft_ui"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_28nu6"]
 panorama = ExtResource("1_a1ply")
@@ -73,6 +74,8 @@ spring_length = 25.0
 [node name="ColorRect" parent="CameraTransitionLayer" index="0" unique_id=1589128641 node_paths=PackedStringArray("camera_manager")]
 color = Color(0, 0, 0, 1)
 camera_manager = NodePath("../../Player/CameraManager")
+
+[node name="WeaponCoreDraftUI" parent="." instance=ExtResource("5_draft_ui")]
 
 [node name="Platform1" type="Node3D" parent="." unique_id=1881075162]
 

@@ -65,6 +65,11 @@ func _ready() -> void:
 	else:
 		push_error("CombatComponent: Missing CombatBuffer child node.")
 
+func _get_core_manager() -> WeaponCoreManager:
+	if parent:
+		return parent.find_child("WeaponCoreManager", true, false) as WeaponCoreManager
+	return null
+
 func start_attack() -> void:
 	if not combat_buffer: return
 
@@ -89,7 +94,9 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 	if not horde_manager:
 		return
 
-	# --- 📐 HIGH-PERFORMANCE SWEEP DATA LOOP ---
+	var core_mgr := _get_core_manager()
+
+	# --- 📐 HIGH-PERFORMANCE SWEEP DATA LOOP WITH CORE MODIFIERS ---
 	var hit_indices := PackedInt32Array()
 	var origin: Vector3 = parent.global_position
 
@@ -97,9 +104,28 @@ func _on_strike_impact_frame(combo_step: int) -> void:
 	forward.y = 0.0
 	forward = forward.normalized() if forward.length_squared() > 0.001 else Vector3.FORWARD
 
-	var active_radius: float = strike_radius if combo_step < 2 else (strike_radius * 1.4)
+	var active_radius: float = strike_radius
+	var arc_bonus: float = 0.0
+	if combo_step < 2:
+		arc_bonus = core_mgr.get_primary_arc_bonus() if core_mgr else 0.0
+	else:
+		var mult := core_mgr.get_shockwave_radius_multiplier() if core_mgr else 1.0
+		active_radius = strike_radius * 1.4 * mult
+
 	var rad_sq: float = active_radius * active_radius
-	var arc_dot_threshold: float = cos(deg_to_rad(strike_arc_degrees * 0.5))
+	var effective_arc: float = strike_arc_degrees + arc_bonus
+	var arc_dot_threshold: float = cos(deg_to_rad(effective_arc * 0.5))
+
+	# Finisher Gravitational Pull Core check
+	if combo_step == 2 and core_mgr:
+		var pull_radius := core_mgr.get_pull_radius()
+		if pull_radius > 0.0:
+			for i in range(horde_manager.highest_active_index):
+				if horde_manager.states[i] != 0:
+					var enemy_pos: Vector3 = horde_manager.positions[i]
+					if origin.distance_squared_to(enemy_pos) <= pull_radius * pull_radius:
+						# Pull enemy towards player origin
+						horde_manager.positions[i] = enemy_pos.lerp(origin + forward * 1.5, 0.6)
 
 	# --- 🪓 HARVESTABLE RESOURCE SWEEP ---
 	var harvestables := get_tree().get_nodes_in_group("harvestables")
@@ -141,13 +167,22 @@ func _route_batch_to_horde_manager(indices: PackedInt32Array, combo_step: int) -
 	if not horde_manager: return
 
 	var current_payload = DamagePayload.new()
+	var core_mgr := _get_core_manager()
 
 	if combo_step < 2:
-		current_payload.base_damage = 15.0
+		var mult := core_mgr.get_primary_damage_multiplier() if core_mgr else 1.0
+		current_payload.base_damage = 15.0 * mult
 		if "is_critical" in current_payload:
 			current_payload.is_critical = false
+
+		# Primary Lifesteal core check
+		if core_mgr:
+			var lifesteal := core_mgr.get_primary_lifesteal()
+			if lifesteal > 0.0 and parent and parent.has_method("heal"):
+				parent.heal(lifesteal * indices.size())
 	else:
-		current_payload.base_damage = 45.0
+		var mult := core_mgr.get_finisher_damage_multiplier() if core_mgr else 1.0
+		current_payload.base_damage = 45.0 * mult
 		if "is_critical" in current_payload:
 			current_payload.is_critical = true
 

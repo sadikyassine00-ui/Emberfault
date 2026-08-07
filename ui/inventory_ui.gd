@@ -1,206 +1,246 @@
 extends Control
 class_name InventoryUI
 
-@onready var grid_container: GridContainer = %GridContainer
+signal tab_changed(tab_name: String)
 
-const MAX_SLOTS: int = 36 # 6x6 Grid
+const TAB_BG: Texture2D = preload("res://Art/inventory_ui/tab_bg.png")
+const TAB_ACTIVE: Texture2D = preload("res://Art/inventory_ui/tab_active.png")
 
-# Slot UI references (0 to 35)
-var slot_panels: Array[PanelContainer] = []
-# Mapping of ResourceType ID to assigned slot index (e.g. {0: 0, 1: 1})
-var assigned_slots: Dictionary = {}
-var icon_textures: Dictionary = {}
+@onready var main_panel: Control = %MainPanel if has_node("%MainPanel") else null
+@onready var items_tab: TextureButton = get_node_or_null("TabHeaderBox/ItemsTab")
+@onready var gear_tab: TextureButton = get_node_or_null("TabHeaderBox/GearTab")
+@onready var misc_tab: TextureButton = get_node_or_null("TabHeaderBox/MiscTab")
 
-# Resource config
-const RESOURCE_CONFIG = {
-	0: {"name": "Wood", "color": Color(0.68, 0.46, 0.24), "border": Color(0.85, 0.60, 0.35)}, # WOOD
-	1: {"name": "Stone", "color": Color(0.55, 0.58, 0.65), "border": Color(0.75, 0.78, 0.85)}, # STONE
-	2: {"name": "Cores", "color": Color(0.12, 0.78, 0.96), "border": Color(0.40, 0.90, 1.00)}  # ENERGY_CORES
-}
+var item_grid: GridContainer = null
+var active_tab_name: String = "ITEMS"
+var font_monogram: Font = preload("res://font/monogram.ttf")
 
 func _ready() -> void:
-	_generate_placeholder_icons()
-	_build_6x6_grid()
-	_refresh_all_totals()
+	_center_main_panel()
+	_setup_tabs()
+	_setup_slots()
+	_connect_resource_manager()
+	update_inventory_display()
 
-	# Connect reactively to ResourceManager signal (NO _process polling!)
-	var res_mgr = get_tree().root.get_node_or_null("ResourceManager")
-	if res_mgr and res_mgr.has_signal("resource_changed"):
-		res_mgr.resource_changed.connect(_on_resource_changed)
+func _get_item_grid() -> GridContainer:
+	if not item_grid or not is_instance_valid(item_grid):
+		item_grid = get_node_or_null("ItemsPanelBox/Middle/MiddleBridge/ItemGridMargin/ItemGrid")
+		if not item_grid:
+			item_grid = find_child("ItemGrid", true, false) as GridContainer
+	return item_grid
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.is_echo():
-		if event.keycode == KEY_I:
-			visible = not visible
-			get_viewport().set_input_as_handled()
+func _connect_resource_manager() -> void:
+	var res_mgr := _get_resource_manager()
+	if res_mgr:
+		if res_mgr.has_signal("inventory_updated"):
+			if not res_mgr.inventory_updated.is_connected(update_inventory_display):
+				res_mgr.inventory_updated.connect(update_inventory_display)
+		if res_mgr.has_signal("item_changed"):
+			if not res_mgr.item_changed.is_connected(_on_item_changed):
+				res_mgr.item_changed.connect(_on_item_changed)
 
-## Generate crisp procedural placeholder textures for each resource type
-func _generate_placeholder_icons() -> void:
-	for type_id in RESOURCE_CONFIG.keys():
-		var cfg = RESOURCE_CONFIG[type_id]
-		icon_textures[type_id] = _create_icon_texture(cfg["color"], cfg["border"], type_id)
+func _get_resource_manager() -> Node:
+	if is_inside_tree():
+		var root_node := get_tree().root
+		if root_node.has_node("ResourceManager"):
+			return root_node.get_node("ResourceManager")
+		var mgr := root_node.find_child("ResourceManager", true, false)
+		if mgr:
+			return mgr
+		var p := get_parent()
+		while p:
+			if p.has_node("ResourceManager"):
+				return p.get_node("ResourceManager")
+			p = p.get_parent()
+	return null
 
-func _create_icon_texture(fill_color: Color, border_color: Color, type_id: int) -> ImageTexture:
-	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0)) # Transparent background
+func _on_item_changed(_item_data: Resource, _amount: int, _total: int) -> void:
+	update_inventory_display()
 
-	var center := Vector2i(32, 32)
-	for x in range(64):
-		for y in range(64):
-			var p := Vector2i(x, y)
-			var d := (p - center).length()
+func _setup_tabs() -> void:
+	if not items_tab: items_tab = get_node_or_null("TabHeaderBox/ItemsTab")
+	if not gear_tab: gear_tab = get_node_or_null("TabHeaderBox/GearTab")
+	if not misc_tab: misc_tab = get_node_or_null("TabHeaderBox/MiscTab")
 
-			if d <= 26.0:
-				var alpha: float = smoothstep(26.0, 24.0, d)
-				var c := fill_color
+	if items_tab and not items_tab.pressed.is_connected(_on_items_tab_pressed):
+		items_tab.pressed.connect(_on_items_tab_pressed)
+	if gear_tab and not gear_tab.pressed.is_connected(_on_gear_tab_pressed):
+		gear_tab.pressed.connect(_on_gear_tab_pressed)
+	if misc_tab and not misc_tab.pressed.is_connected(_on_misc_tab_pressed):
+		misc_tab.pressed.connect(_on_misc_tab_pressed)
 
-				if type_id == 0: # Wood: Ring grain
-					if abs(d - 12.0) < 2.0 or abs(d - 19.0) < 1.5:
-						c = c.darkened(0.25)
-				elif type_id == 1: # Stone: Facet cut
-					if (x + y) % 16 < 4 or (x - y) % 16 < 3:
-						c = c.lightened(0.15)
-				elif type_id == 2: # Energy Core: Glowing inner core
-					if d <= 12.0:
-						c = Color(0.9, 1.0, 1.0, 1.0)
-					elif d <= 18.0:
-						c = c.lightened(0.4)
+	set_active_tab("ITEMS")
 
-				c.a = alpha
-				img.set_pixel(x, y, c)
-			elif d <= 28.0:
-				var border_alpha: float = smoothstep(28.0, 26.0, d)
-				var bc := border_color
-				bc.a = border_alpha
-				img.set_pixel(x, y, bc)
+func _on_items_tab_pressed() -> void:
+	set_active_tab("ITEMS")
 
-	return ImageTexture.create_from_image(img)
+func _on_gear_tab_pressed() -> void:
+	set_active_tab("GEAR")
 
-## Build 36 empty grid slots (6 columns x 6 rows)
-func _build_6x6_grid() -> void:
-	if not grid_container:
+func _on_misc_tab_pressed() -> void:
+	set_active_tab("MISC")
+
+func set_active_tab(tab_name: String) -> void:
+	active_tab_name = tab_name
+
+	_update_tab_button(items_tab, tab_name == "ITEMS")
+	_update_tab_button(gear_tab, tab_name == "GEAR")
+	_update_tab_button(misc_tab, tab_name == "MISC")
+
+	update_inventory_display()
+	tab_changed.emit(tab_name)
+
+func _update_tab_button(button: TextureButton, is_active: bool) -> void:
+	if not button:
 		return
 
-	grid_container.columns = 6
+	button.texture_normal = TAB_ACTIVE if is_active else TAB_BG
 
-	for child in grid_container.get_children():
-		child.queue_free()
+	var label := button.get_node_or_null("Label") as Label
+	if label:
+		if is_active:
+			label.add_theme_color_override("font_color", Color(1.0, 0.96, 0.85, 1.0))
+		else:
+			label.add_theme_color_override("font_color", Color(0.65, 0.58, 0.46, 0.85))
 
-	slot_panels.clear()
-	assigned_slots.clear()
+func _setup_slots() -> void:
+	var grid := _get_item_grid()
+	if not grid:
+		return
 
-	for i in range(MAX_SLOTS):
-		var panel := _create_empty_slot_node(i)
-		grid_container.add_child(panel)
-		slot_panels.append(panel)
+	for slot in grid.get_children():
+		if slot is Control:
+			_ensure_slot_child_nodes(slot)
 
-func _create_empty_slot_node(index: int) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.name = "Slot_" + str(index)
-	panel.custom_minimum_size = Vector2(52, 52)
+func _ensure_slot_child_nodes(slot: Control) -> void:
+	var icon_rect := slot.get_node_or_null("ItemIcon") as TextureRect
+	if not icon_rect:
+		icon_rect = TextureRect.new()
+		icon_rect.name = "ItemIcon"
+		icon_rect.layout_mode = 1
+		icon_rect.anchors_preset = 15
+		icon_rect.anchor_right = 1.0
+		icon_rect.anchor_bottom = 1.0
+		icon_rect.offset_left = 3
+		icon_rect.offset_top = 3
+		icon_rect.offset_right = -3
+		icon_rect.offset_bottom = -3
+		icon_rect.grow_horizontal = 2
+		icon_rect.grow_vertical = 2
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.visible = false
+		slot.add_child(icon_rect)
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.08, 0.14, 0.80)
-	style.border_width_left = 1
-	style.border_width_top = 1
-	style.border_width_right = 1
-	style.border_width_bottom = 1
-	style.border_color = Color(0.20, 0.30, 0.48, 0.45)
-	style.corner_radius_top_left = 5
-	style.corner_radius_top_right = 5
-	style.corner_radius_bottom_right = 5
-	style.corner_radius_bottom_left = 5
-	panel.add_theme_stylebox_override("panel", style)
+	var stack_label := slot.get_node_or_null("StackLabel") as Label
+	if not stack_label:
+		stack_label = Label.new()
+		stack_label.name = "StackLabel"
+		stack_label.layout_mode = 1
+		stack_label.anchors_preset = 3
+		stack_label.anchor_left = 1.0
+		stack_label.anchor_top = 1.0
+		stack_label.anchor_right = 1.0
+		stack_label.anchor_bottom = 1.0
+		stack_label.offset_left = -30
+		stack_label.offset_top = -16
+		stack_label.offset_right = -2
+		stack_label.offset_bottom = -1
+		stack_label.grow_horizontal = 0
+		stack_label.grow_vertical = 0
+		stack_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		stack_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		if font_monogram:
+			stack_label.add_theme_font_override("font", font_monogram)
+		stack_label.add_theme_font_size_override("font_size", 14)
+		stack_label.add_theme_color_override("font_color", Color(1.0, 0.98, 0.90, 1.0))
+		stack_label.add_theme_color_override("font_shadow_color", Color(0.1, 0.06, 0.02, 0.9))
+		stack_label.add_theme_constant_override("shadow_offset_y", 1)
+		stack_label.visible = false
+		slot.add_child(stack_label)
 
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 4)
-	margin.add_theme_constant_override("margin_top", 4)
-	margin.add_theme_constant_override("margin_right", 4)
-	margin.add_theme_constant_override("margin_bottom", 4)
-	panel.add_child(margin)
+func update_inventory_display() -> void:
+	var grid := _get_item_grid()
+	if not grid:
+		return
 
-	var icon_rect := TextureRect.new()
-	icon_rect.name = "IconRect"
-	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon_rect.custom_minimum_size = Vector2(34, 34)
-	icon_rect.visible = false # Hidden when empty
-	margin.add_child(icon_rect)
-
-	var label_container := Control.new()
-	label_container.layout_mode = 1
-	label_container.anchors_preset = PRESET_FULL_RECT
-	margin.add_child(label_container)
-
-	var amount_label := Label.new()
-	amount_label.name = "AmountLabel"
-	amount_label.anchors_preset = PRESET_BOTTOM_RIGHT
-	amount_label.grow_horizontal = GROW_DIRECTION_BEGIN
-	amount_label.grow_vertical = GROW_DIRECTION_BEGIN
-	amount_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	amount_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	amount_label.text = ""
-	amount_label.add_theme_font_size_override("font_size", 12)
-	amount_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
-	amount_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
-	amount_label.add_theme_constant_override("outline_size", 4)
-	label_container.add_child(amount_label)
-
-	return panel
-
-func _refresh_all_totals() -> void:
-	var res_mgr = get_tree().root.get_node_or_null("ResourceManager")
+	var res_mgr := _get_resource_manager()
 	if not res_mgr:
 		return
 
-	if res_mgr.has_method("get_resource"):
-		for type_id in RESOURCE_CONFIG.keys():
-			_update_slot(type_id, res_mgr.get_resource(type_id))
+	var category_filter: int = _get_category_filter_for_tab(active_tab_name)
+	var items: Array[Dictionary] = []
 
-func _on_resource_changed(type: int, _amount_changed: int, current_total: int) -> void:
-	_update_slot(type, current_total)
+	if res_mgr.has_method("get_inventory_items"):
+		items = res_mgr.get_inventory_items(category_filter)
 
-func _update_slot(type_id: int, total: int) -> void:
-	if total > 0:
-		# If item is not yet assigned a slot in the grid, append it to the first free slot
-		if not assigned_slots.has(type_id):
-			var free_index := _find_first_free_slot()
-			if free_index != -1:
-				assigned_slots[type_id] = free_index
+	var slots := grid.get_children()
+	for i in range(slots.size()):
+		var slot := slots[i] as Control
+		if not slot:
+			continue
 
-		if assigned_slots.has(type_id):
-			var slot_idx: int = assigned_slots[type_id]
-			var panel := slot_panels[slot_idx]
-			var icon_rect: TextureRect = panel.find_child("IconRect", true, false) as TextureRect
-			var amount_label: Label = panel.find_child("AmountLabel", true, false) as Label
+		_ensure_slot_child_nodes(slot)
 
-			if icon_rect:
-				icon_rect.texture = icon_textures[type_id]
-				icon_rect.visible = true
-				icon_rect.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		var icon_rect := slot.get_node_or_null("ItemIcon") as TextureRect
+		var stack_label := slot.get_node_or_null("StackLabel") as Label
 
-			if amount_label:
-				amount_label.text = str(total)
-	else:
-		# If count drops to 0, clear the slot
-		if assigned_slots.has(type_id):
-			var slot_idx: int = assigned_slots[type_id]
-			var panel := slot_panels[slot_idx]
-			var icon_rect: TextureRect = panel.find_child("IconRect", true, false) as TextureRect
-			var amount_label: Label = panel.find_child("AmountLabel", true, false) as Label
+		if i < items.size():
+			var item_info: Dictionary = items[i]
+			var item_data: Resource = item_info.get("item_data")
+			var count: int = item_info.get("count", 0)
 
-			if icon_rect:
-				icon_rect.texture = null
-				icon_rect.visible = false
+			if item_data and count > 0:
+				if icon_rect:
+					var tex: Texture2D = item_data.get("icon") if ("icon" in item_data) else null
+					icon_rect.texture = tex
+					icon_rect.visible = (tex != null)
 
-			if amount_label:
-				amount_label.text = ""
+				if stack_label:
+					stack_label.text = str(count)
+					stack_label.visible = (count > 1)
+			else:
+				_clear_slot(icon_rect, stack_label)
+		else:
+			_clear_slot(icon_rect, stack_label)
 
-			assigned_slots.erase(type_id)
+func _clear_slot(icon_rect: TextureRect, stack_label: Label) -> void:
+	if icon_rect:
+		icon_rect.texture = null
+		icon_rect.visible = false
+	if stack_label:
+		stack_label.text = ""
+		stack_label.visible = false
 
-func _find_first_free_slot() -> int:
-	var used_indices := assigned_slots.values()
-	for i in range(MAX_SLOTS):
-		if not (i in used_indices):
-			return i
-	return -1
+func _get_category_filter_for_tab(tab_name: String) -> int:
+	match tab_name:
+		"ITEMS":
+			return -1
+		"GEAR":
+			return ItemData.Category.EQUIPMENT
+		"MISC":
+			return ItemData.Category.QUEST
+		_:
+			return -1
+
+func _center_main_panel() -> void:
+	if main_panel:
+		var vp_size := get_viewport_rect().size
+		if vp_size != Vector2.ZERO:
+			main_panel.global_position = (vp_size - main_panel.size) * 0.5
+
+func _unhandled_input(event: InputEvent) -> void:
+	var is_toggle := false
+	if event is InputEventKey and event.pressed and not event.is_echo():
+		if event.keycode == KEY_I:
+			is_toggle = true
+	elif InputMap.has_action("inventory") and Input.is_action_just_pressed("inventory"):
+		is_toggle = true
+
+	if is_toggle:
+		visible = not visible
+		if visible:
+			_center_main_panel()
+			_connect_resource_manager()
+			update_inventory_display()
+		get_viewport().set_input_as_handled()

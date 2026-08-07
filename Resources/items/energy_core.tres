@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://itemcore003"]
+
+[ext_resource type="Script" path="res://systems/core/item_data.gd" id="1_itemscript"]
+
+[resource]
+script = ExtResource("1_itemscript")
+id = "energy_core"
+name = "Energy Core"
+description = "A concentrated glowing core brimming with elemental power. Powers defensive tech and specialized core upgrades."
+category = 0
+max_stack = 99
+custom_stats = {}

@@ -8,6 +8,7 @@ signal strike_impact(position: Vector3)
 @onready var combat: CombatComponent = $CombatComponent
 @onready var health_component: Node = $HealthComponent
 @onready var visual_model: Node3D = $Axyl
+@onready var weapon_core_manager: WeaponCoreManager = $WeaponCoreManager if has_node("WeaponCoreManager") else null
 
 var active_trail: Node3D = null
 
@@ -20,6 +21,11 @@ var _stabilization_timer: float = 1.5
 func _ready() -> void:
 	_initial_y = global_position.y
 	_cache_active_camera()
+
+	if not weapon_core_manager:
+		weapon_core_manager = WeaponCoreManager.new()
+		weapon_core_manager.name = "WeaponCoreManager"
+		add_child(weapon_core_manager)
 
 	if combat:
 		combat.strike_impact.connect(func(pos: Vector3) -> void:
@@ -35,6 +41,16 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("attack"):
 		if movement and combat and not movement.is_dashing:
 			combat.start_attack()
+
+	if event is InputEventKey and event.pressed and not event.is_echo():
+		if event.keycode == KEY_U:
+			var draft_ui := get_tree().current_scene.find_child("WeaponCoreDraftUI", true, false) as WeaponCoreDraftUI
+			if draft_ui:
+				if draft_ui.visible:
+					draft_ui.close_draft()
+				else:
+					draft_ui.open_draft()
+				get_viewport().set_input_as_handled()
 
 	if event.is_action_pressed("ui_home"):
 		# Optimized: Uses pre-cached combat component reference instantly

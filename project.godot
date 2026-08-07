@@ -29,13 +29,13 @@ buses/default_bus_layout="uid://c5ju8cslrhdsk"
 PhantomCameraManager="*uid://duq6jhf6unyis"
 JuiceDirector="*uid://vfty81c8aptu"
 AudioManager="*uid://c0dxtrad0qx03"
-_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 ResourceManager="*res://systems/core/resource_manager.gd"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [display]
 
-window/size/viewport_width=1920
-window/size/viewport_height=1080
+window/size/viewport_width=1366
+window/size/viewport_height=768
 window/size/mode=3
 window/dpi/allow_hidpi=false
 window/vsync/vsync_mode=0

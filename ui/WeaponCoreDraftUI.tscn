@@ -1,0 +1,135 @@
+[gd_scene load_steps=6 format=3 uid="uid://weaponcoredraftui"]
+
+[ext_resource type="Script" path="res://ui/weapon_core_draft_ui.gd" id="1_draft_script"]
+[ext_resource type="FontFile" path="res://font/monogram.ttf" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_overlay"]
+bg_color = Color(0.04, 0.05, 0.08, 0.85)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(0.1, 0.12, 0.18, 0.9)
+border_width_bottom = 2
+border_color = Color(0.25, 0.5, 0.9, 1)
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_close_btn"]
+bg_color = Color(0.2, 0.22, 0.28, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.45, 0.55, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="WeaponCoreDraftUI" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_draft_script")
+
+[node name="BackgroundOverlay" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_overlay")
+
+[node name="MainVBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="HeaderContainer" type="PanelContainer" parent="MainVBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_header")
+
+[node name="HeaderVBox" type="VBoxContainer" parent="MainVBox/HeaderContainer"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="TitleLabel" type="Label" parent="MainVBox/HeaderContainer/HeaderVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 38
+theme_override_colors/font_color = Color(1, 0.95, 0.8, 1)
+theme_override_colors/font_shadow_color = Color(0.1, 0.05, 0, 0.8)
+theme_override_constants/shadow_offset_y = 2
+text = "WEAPON CORE SELECTION"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="MainVBox/HeaderContainer/HeaderVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
+text = "Combat Paused • Select 1 Core to Equip"
+horizontal_alignment = 1
+
+[node name="CardsMargin" type="MarginContainer" parent="MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 10
+
+[node name="CardsContainer" type="HBoxContainer" parent="MainVBox/CardsMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="FooterBox" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="FooterMargin" type="MarginContainer" parent="MainVBox/FooterBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 20
+
+[node name="FooterHBox" type="HBoxContainer" parent="MainVBox/FooterBox/FooterMargin"]
+layout_mode = 2
+
+[node name="EquippedSummaryLabel" type="Label" parent="MainVBox/FooterBox/FooterMargin/FooterHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.85, 0.88, 0.95, 0.9)
+text = "EQUIPPED CORES:  [Primary: Empty]  •  [Finisher: Empty]  •  [Dash: Empty]"
+vertical_alignment = 1
+
+[node name="CloseButton" type="Button" parent="MainVBox/FooterBox/FooterMargin/FooterHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_close_btn")
+text = "CLOSE (U)"

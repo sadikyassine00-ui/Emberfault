@@ -246,7 +246,7 @@ func _execute_terrain_shatter() -> void:
 	var p_z := int(floor(local_player_pos.z))
 
 	var targets: Array[Vector2i] = []
-	var half_width := shatter_width / 2
+	var half_width: int = int(shatter_width * 0.5)
 
 	if abs(current_attack_direction.x) > abs(current_attack_direction.z):
 		if current_attack_direction.x > 0:

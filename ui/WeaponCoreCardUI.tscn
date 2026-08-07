@@ -1,0 +1,151 @@
+[gd_scene load_steps=7 format=3 uid="uid://weaponcorecardui"]
+
+[ext_resource type="Script" path="res://ui/weapon_core_card_ui.gd" id="1_card_script"]
+[ext_resource type="FontFile" path="res://font/monogram.ttf" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.08, 0.1, 0.14, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.35, 0.45, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+bg_color = Color(0.15, 0.18, 0.25, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
+bg_color = Color(0.18, 0.52, 0.92, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
+bg_color = Color(0.28, 0.62, 1.0, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="WeaponCoreCardUI" type="PanelContainer"]
+custom_minimum_size = Vector2(340, 480)
+offset_right = 340.0
+offset_bottom = 480.0
+pivot_offset = Vector2(170, 240)
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+script = ExtResource("1_card_script")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HeaderBox" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SlotBadgePanel" type="PanelContainer" parent="VBox/HeaderBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="SlotBadgeLabel" type="Label" parent="VBox/HeaderBox/SlotBadgePanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+text = "SLOT 1: ATTACK 1 & 2"
+horizontal_alignment = 1
+
+[node name="RarityLabel" type="Label" parent="VBox/HeaderBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "EPIC"
+horizontal_alignment = 2
+
+[node name="IconMargin" type="MarginContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="IconRect" type="TextureRect" parent="VBox/IconMargin"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 70)
+layout_mode = 2
+size_flags_horizontal = 4
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TitleLabel" type="Label" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 0.98, 0.9, 1)
+text = "Core Title"
+horizontal_alignment = 1
+
+[node name="DescriptionLabel" type="Label" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.8, 0.82, 0.88, 1)
+text = "Modifies Attack 1 & 2..."
+autowrap_mode = 2
+
+[node name="EquippedBanner" type="PanelContainer" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="EquippedLabel" type="Label" parent="VBox/EquippedBanner"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "NEW SLOT CORE"
+horizontal_alignment = 1
+
+[node name="SelectButton" type="Button" parent="VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+text = "EQUIP CORE"
+
+[node name="BorderGlow" type="ReferenceRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+border_color = Color(0.2, 0.8, 1, 1)
+border_width = 3.0
+editor_only = false

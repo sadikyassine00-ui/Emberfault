@@ -4,6 +4,7 @@ class_name HarvestableResource
 signal harvested(resource_type: int, yield_amount: int)
 
 @export var resource_name: String = "Wood Tree"
+@export var item_data: Resource # Assign custom ItemData resource directly in Inspector!
 @export_enum("WOOD", "STONE", "ENERGY_CORES") var resource_type: int = 0
 @export var yield_amount: int = 10
 @export var max_durability: int = 3
@@ -27,8 +28,11 @@ func harvest(damage: int = 1) -> void:
 func _grant_and_destroy() -> void:
 	if is_inside_tree():
 		var res_mgr = get_tree().root.get_node_or_null("ResourceManager")
-		if res_mgr and res_mgr.has_method("add_resource"):
-			res_mgr.add_resource(resource_type, yield_amount)
+		if res_mgr:
+			if item_data and res_mgr.has_method("add_item"):
+				res_mgr.add_item(item_data, yield_amount)
+			elif res_mgr.has_method("add_resource"):
+				res_mgr.add_resource(resource_type, yield_amount)
 
 	harvested.emit(resource_type, yield_amount)
 
