@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://weaponcoredraftui"]
 
 [ext_resource type="Script" path="res://ui/weapon_core_draft_ui.gd" id="1_draft_script"]
-[ext_resource type="FontFile" path="res://font/monogram.ttf" id="2_font"]
+[ext_resource type="Theme" uid="uid://dcifv02w1nlgu" path="res://default_theme.tres" id="2_theme"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_overlay"]
 bg_color = Color(0.04, 0.05, 0.08, 0.85)
@@ -37,6 +37,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_draft_script")
 
 [node name="BackgroundOverlay" type="Panel" parent="."]
@@ -68,7 +69,6 @@ theme_override_constants/separation = 2
 
 [node name="TitleLabel" type="Label" parent="MainVBox/HeaderContainer/HeaderVBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(1, 0.95, 0.8, 1)
 theme_override_colors/font_shadow_color = Color(0.1, 0.05, 0, 0.8)
@@ -78,7 +78,6 @@ horizontal_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="MainVBox/HeaderContainer/HeaderVBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
 text = "Combat Paused • Select 1 Core to Equip"
@@ -119,7 +118,6 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.85, 0.88, 0.95, 0.9)
 text = "EQUIPPED CORES:  [Primary: Empty]  •  [Finisher: Empty]  •  [Dash: Empty]"
@@ -129,7 +127,6 @@ vertical_alignment = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(140, 36)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxFlat_close_btn")
 text = "CLOSE (U)"

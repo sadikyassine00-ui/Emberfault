@@ -11,25 +11,17 @@ signal card_selected(core_data: WeaponCoreData)
 @onready var description_label: Label = %DescriptionLabel if has_node("%DescriptionLabel") else null
 @onready var equipped_banner: PanelContainer = %EquippedBanner if has_node("%EquippedBanner") else null
 @onready var equipped_label: Label = %EquippedLabel if has_node("%EquippedLabel") else null
-@onready var select_button: Button = %SelectButton if has_node("%SelectButton") else null
 @onready var border_glow: ReferenceRect = %BorderGlow if has_node("%BorderGlow") else null
 
 var core_data: WeaponCoreData = null
 var current_equipped: WeaponCoreData = null
-
-var font_monogram: Font = preload("res://font/monogram.ttf")
 var _scale_tween: Tween
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(340, 480)
-	pivot_offset = Vector2(170, 240) # Center pivot for smooth scaling
+	custom_minimum_size = Vector2(330, 440)
+	pivot_offset = Vector2(165, 220)
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
-
-	if select_button:
-		select_button.pressed.connect(_on_select_pressed)
-		select_button.mouse_entered.connect(_on_mouse_entered)
-		select_button.mouse_exited.connect(_on_mouse_exited)
 
 func setup(data: WeaponCoreData, currently_equipped_core: WeaponCoreData = null) -> void:
 	core_data = data
@@ -57,8 +49,8 @@ func _update_card_display() -> void:
 		if core_data.icon:
 			icon_rect.texture = core_data.icon
 			icon_rect.visible = true
+			icon_rect.modulate = Color.WHITE
 		else:
-			# Fallback icon modulation color based on core accent
 			icon_rect.modulate = core_data.accent_color
 
 	if equipped_banner and equipped_label:
@@ -90,10 +82,8 @@ func _animate_scale(target_scale: float, duration: float) -> void:
 	_scale_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_scale_tween.tween_property(self, "scale", Vector2(target_scale, target_scale), duration)
 
-func _on_select_pressed() -> void:
-	if core_data:
-		card_selected.emit(core_data)
-
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_on_select_pressed()
+		if core_data:
+			card_selected.emit(core_data)
+			get_viewport().set_input_as_handled()
