@@ -62,7 +62,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		var current_scene := get_tree().current_scene
 		if current_scene:
-			var fallback_manager := current_scene.find_child("HordeManager", true, false) as HordeManager
+			var fallback_manager = current_scene.find_child("HordeManager", true, false)
 			if fallback_manager:
 				var spawn_point := global_position + Vector3(0, 0, -5.0)
 				fallback_manager.debug_inject_cluster(10, spawn_point)

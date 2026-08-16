@@ -1,0 +1,37 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://addons/horde_system/demo/death_vfx.gd" id="1_vfx"]
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_vfx"]
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 3.0
+initial_velocity_max = 8.0
+gravity = Vector3(0, -9.8, 0)
+scale_min = 0.2
+scale_max = 0.6
+color = Color(1, 0, 0, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vfx"]
+albedo_color = Color(1, 0.1, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0, 0, 1)
+emission_energy_multiplier = 2.0
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_vfx"]
+material = SubResource("StandardMaterial3D_vfx")
+size = Vector2(0.5, 0.5)
+
+[node name="DeathVFX" type="GPUParticles3D"]
+emitting = false
+amount = 15
+lifetime = 0.6
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("ParticleProcessMaterial_vfx")
+draw_pass_1 = SubResource("QuadMesh_vfx")
+script = ExtResource("1_vfx")

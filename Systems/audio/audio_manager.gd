@@ -145,6 +145,7 @@ func play_sfx_2d(stream: AudioStream, bus_override: StringName = BUS_UI, pitch: 
 # ------------------------------------------------------------------------------
 func transition_to_music(new_stream: AudioStream, fade_duration: float = 1.5) -> void:
 	if new_stream == null:
+		stop_music(fade_duration)
 		return
 
 	if new_stream is AudioStreamOggVorbis:
@@ -171,6 +172,15 @@ func transition_to_music(new_stream: AudioStream, fade_duration: float = 1.5) ->
 	_music_tween.tween_property(incoming_player, "volume_db", 0.0, fade_duration)
 	
 	_active_music_player = incoming_player
+
+func stop_music(fade_duration: float = 1.5) -> void:
+	if _music_tween and _music_tween.is_running():
+		_music_tween.kill()
+
+	if _active_music_player.playing:
+		_music_tween = create_tween()
+		_music_tween.tween_property(_active_music_player, "volume_db", -80.0, fade_duration)
+		_music_tween.tween_callback(Callable(_active_music_player, "stop"))
 
 # ------------------------------------------------------------------------------
 # AMBIENCE PIPELINE

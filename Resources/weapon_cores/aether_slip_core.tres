@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponCoreData" format=3 uid="uid://cp2q341ircuu7"]
+
+[ext_resource type="Script" uid="uid://cbpiu4gvknoei" path="res://systems/core/weapon_core_data.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://c2bnp2crlekni" path="res://Art/icons/Sprites/200%/Rune_5.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = "core_phantom_dodge"
+title = "Aether Slip Core"
+description = "Modifies Dash:
+Grants extended invincibility during dash and +30% dash speed."
+icon = ExtResource("2_icon")
+slot = 3
+rarity = 3
+accent_color = Color(0.4, 1, 0.7, 1)
+dash_speed_bonus_pct = 0.3
+dash_invincibility_bonus = 0.15

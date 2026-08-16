@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponCoreData" format=3]
+
+[ext_resource type="Script" path="res://systems/core/weapon_core_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Art/icons/Sprites/200%/Skill_14.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = "core_seismic_slam"
+title = "Seismic Shockwave Core"
+description = "Modifies Attack 3:
+Finisher slam radius is increased (1.8x) and deals +50% heavy damage."
+icon = ExtResource("2_icon")
+slot = 2
+rarity = 2
+accent_color = Color(1, 0.6, 0.1, 1)
+finisher_damage_bonus_pct = 0.5
+shockwave_radius_mult = 1.8
+finisher_knockback_bonus = 8.0

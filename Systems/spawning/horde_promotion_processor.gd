@@ -16,7 +16,7 @@ var promoted_distances_sq: PackedFloat32Array = PackedFloat32Array()
 var unpromoted_candidates: PackedInt32Array = PackedInt32Array()
 var unpromoted_distances_sq: PackedFloat32Array = PackedFloat32Array()
 
-func process_promotions(manager: HordeManager) -> void:
+func process_promotions(manager) -> void:
 	var player_node: Node3D = manager.player
 	if not player_node:
 		return

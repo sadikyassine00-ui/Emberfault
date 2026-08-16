@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponCoreData" format=3]
+
+[ext_resource type="Script" path="res://systems/core/weapon_core_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Art/icons/Sprites/200%/Sword_0.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = "core_heavy_impact"
+title = "Heavy Kinetic Core"
+description = "Modifies Attack 1 & 2:
++30% Primary Damage and adds heavy knockback stagger on hit."
+icon = ExtResource("2_icon")
+slot = 1
+rarity = 1
+accent_color = Color(0.95, 0.45, 0.2, 1)
+primary_damage_bonus_pct = 0.3
+primary_stagger_force = 5.0

@@ -2,7 +2,7 @@ extends Node3D
 class_name SpawnManager
 
 @export_category("Core References")
-@export var horde_manager: HordeManager
+@export var horde_manager: Node3D
 @export var player: Node3D
 @export var base_core: Node3D
 @export var spawn_radius: float = 60.0
@@ -101,5 +101,5 @@ func _spawn_squad() -> void:
 	horde_manager.spawn_wave_ring(spawn_target_node, spawn_radius, squad_size)
 	enemies_spawned_this_wave += squad_size
 
-	var base_cooldown: float = spawn_timer.wait_time if spawn_timer else 3.0
-	squad_cooldown_timer = maxf(min_squad_spawn_cooldown, base_cooldown - minutes * 0.2)
+	var fallback_cooldown: float = spawn_timer.wait_time if spawn_timer else 3.0
+	squad_cooldown_timer = maxf(min_squad_spawn_cooldown, fallback_cooldown - minutes * 0.2)

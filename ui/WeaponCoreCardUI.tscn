@@ -1,135 +1,169 @@
-[gd_scene load_steps=6 format=3 uid="uid://weaponcorecardui"]
+[gd_scene format=3 uid="uid://b848ujcclvl7a"]
 
-[ext_resource type="Script" path="res://ui/weapon_core_card_ui.gd" id="1_card_script"]
-[ext_resource type="Theme" uid="uid://dcifv02w1nlgu" path="res://default_theme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://cauxmndlfduoy" path="res://ui/weapon_core_card_ui.gd" id="1_card_script"]
+[ext_resource type="FontFile" uid="uid://bb2p46xuk61s1" path="res://font/monogram.ttf" id="2_pixel_font"]
+[ext_resource type="Texture2D" uid="uid://di1uimfrs7del" path="res://Art/inventory_ui/main_tab_window.png" id="3_bgtex"]
+[ext_resource type="Texture2D" uid="uid://p7ec4gwb83mu" path="res://Art/inventory_ui/icon_frame.png" id="4_icon_frame_tex"]
+[ext_resource type="Texture2D" uid="uid://f6qxg5s0r4sr" path="res://Art/inventory_ui/inner_card_bg.png" id="5_desc_bg_tex"]
+[ext_resource type="Texture2D" uid="uid://crj3mq1bcaeuo" path="res://Art/inventory_ui/card_title_frame.png" id="6_slot_frame_tex"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
-content_margin_left = 18.0
-content_margin_top = 18.0
-content_margin_right = 18.0
-content_margin_bottom = 18.0
-bg_color = Color(0.08, 0.1, 0.14, 0.95)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.3, 0.35, 0.45, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-shadow_color = Color(0, 0, 0, 0.5)
-shadow_size = 8
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_card_bg"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+texture = ExtResource("3_bgtex")
+texture_margin_left = 30.0
+texture_margin_top = 30.0
+texture_margin_right = 30.0
+texture_margin_bottom = 30.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
-content_margin_left = 6.0
-content_margin_top = 4.0
-content_margin_right = 6.0
-content_margin_bottom = 4.0
-bg_color = Color(0.15, 0.18, 0.25, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_slot_badge"]
+content_margin_left = 14.0
+content_margin_top = 6.0
+content_margin_right = 14.0
+content_margin_bottom = 6.0
+texture = ExtResource("6_slot_frame_tex")
+texture_margin_left = 12.0
+texture_margin_top = 6.0
+texture_margin_right = 12.0
+texture_margin_bottom = 6.0
+axis_stretch_horizontal = 1
 
-[node name="WeaponCoreCardUI" type="PanelContainer"]
-custom_minimum_size = Vector2(330, 440)
-offset_right = 330.0
-offset_bottom = 440.0
-pivot_offset = Vector2(165, 220)
-mouse_filter = 0
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_desc_box"]
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+texture = ExtResource("5_desc_bg_tex")
+texture_margin_left = 12.0
+texture_margin_top = 12.0
+texture_margin_right = 12.0
+texture_margin_bottom = 12.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[node name="WeaponCoreCardUI" type="PanelContainer" unique_id=1057811651]
+custom_minimum_size = Vector2(340, 480)
+offset_right = 340.0
+offset_bottom = 480.0
+pivot_offset = Vector2(170, 240)
 mouse_default_cursor_shape = 2
-theme = ExtResource("2_theme")
-theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+theme_override_styles/panel = SubResource("StyleBoxTexture_card_bg")
 script = ExtResource("1_card_script")
 
-[node name="VBox" type="VBoxContainer" parent="."]
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1018870653]
 layout_mode = 2
-mouse_filter = 1
 theme_override_constants/separation = 12
 
-[node name="HeaderBox" type="HBoxContainer" parent="VBox"]
+[node name="HeaderBox" type="HBoxContainer" parent="VBox" unique_id=148707168]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="SlotBadgePanel" type="PanelContainer" parent="VBox/HeaderBox"]
+[node name="SlotBadgePanel" type="PanelContainer" parent="VBox/HeaderBox" unique_id=589944104]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+theme_override_styles/panel = SubResource("StyleBoxTexture_slot_badge")
 
-[node name="SlotBadgeLabel" type="Label" parent="VBox/HeaderBox/SlotBadgePanel"]
+[node name="SlotBadgeLabel" type="Label" parent="VBox/HeaderBox/SlotBadgePanel" unique_id=1477737181]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-theme_override_font_sizes/font_size = 18
-theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
-text = "SLOT 1: ATTACK 1 & 2"
+theme_override_colors/font_color = Color(0.85, 0.9, 0.95, 1)
+theme_override_fonts/font = ExtResource("2_pixel_font")
+theme_override_font_sizes/font_size = 20
+text = "PRIMARY CORE"
 horizontal_alignment = 1
 
-[node name="RarityLabel" type="Label" parent="VBox/HeaderBox"]
+[node name="RarityPanel" type="PanelContainer" parent="VBox/HeaderBox" unique_id=884506832]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_slot_badge")
+
+[node name="RarityLabel" type="Label" parent="VBox/HeaderBox/RarityPanel" unique_id=341171153]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_pixel_font")
 theme_override_font_sizes/font_size = 18
 text = "EPIC"
-horizontal_alignment = 2
+horizontal_alignment = 1
 
-[node name="IconMargin" type="MarginContainer" parent="VBox"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_bottom = 10
-
-[node name="IconRect" type="TextureRect" parent="VBox/IconMargin"]
+[node name="IconFrameRect" type="TextureRect" parent="VBox" unique_id=472261849]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(80, 80)
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 size_flags_horizontal = 4
+mouse_filter = 2
+texture = ExtResource("4_icon_frame_tex")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="IconMargin" type="MarginContainer" parent="VBox/IconFrameRect" unique_id=494901081]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="IconRect" type="TextureRect" parent="VBox/IconFrameRect/IconMargin" unique_id=1564367061]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="TitleLabel" type="Label" parent="VBox"]
+[node name="TitleLabel" type="Label" parent="VBox" unique_id=1199909796]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-theme_override_font_sizes/font_size = 26
-theme_override_colors/font_color = Color(1, 0.98, 0.9, 1)
+theme_override_colors/font_color = Color(1, 0.92, 0.8, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.95)
+theme_override_constants/shadow_offset_y = 2
+theme_override_fonts/font = ExtResource("2_pixel_font")
+theme_override_font_sizes/font_size = 28
 text = "Core Title"
 horizontal_alignment = 1
 
-[node name="DescriptionLabel" type="Label" parent="VBox"]
-unique_name_in_owner = true
+[node name="DescriptionPanel" type="PanelContainer" parent="VBox" unique_id=916488027]
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_desc_box")
+
+[node name="DescriptionLabel" type="Label" parent="VBox/DescriptionPanel" unique_id=725558440]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.8, 0.84, 0.9, 1)
+theme_override_fonts/font = ExtResource("2_pixel_font")
 theme_override_font_sizes/font_size = 18
-theme_override_colors/font_color = Color(0.8, 0.82, 0.88, 1)
 text = "Modifies Attack 1 & 2..."
 autowrap_mode = 2
 
-[node name="EquippedBanner" type="PanelContainer" parent="VBox"]
+[node name="EquippedBanner" type="PanelContainer" parent="VBox" unique_id=623458089]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+theme_override_styles/panel = SubResource("StyleBoxTexture_slot_badge")
 
-[node name="EquippedLabel" type="Label" parent="VBox/EquippedBanner"]
+[node name="EquippedLabel" type="Label" parent="VBox/EquippedBanner" unique_id=281177031]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
+theme_override_fonts/font = ExtResource("2_pixel_font")
 theme_override_font_sizes/font_size = 16
-text = "NEW SLOT CORE"
+text = "UNBOUND SLOT"
 horizontal_alignment = 1
-
-[node name="BorderGlow" type="ReferenceRect" parent="."]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-mouse_filter = 2
-border_color = Color(0.2, 0.8, 1, 1)
-border_width = 3.0
-editor_only = false

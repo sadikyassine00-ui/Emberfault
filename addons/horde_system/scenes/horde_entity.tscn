@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://3rf6ka13addh"]
+
+[ext_resource type="Script" uid="uid://bmhby6pxplhaw" path="res://addons/horde_system/scripts/horde_entity.gd" id="1_entity"]
+[ext_resource type="ArrayMesh" uid="uid://bccp0xp2untlt" path="res://Art/skull_mesh.tres" id="2_l264t"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oai4s"]
+resource_local_to_scene = true
+albedo_color = Color(1, 1, 0.1764706, 1)
+
+[sub_resource type="Animation" id="Animation_l264t"]
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("MeshInstance3D:surface_material_override/0:albedo_color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(0, 1, 0, 1), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_oai4s"]
+length = 1.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("MeshInstance3D:surface_material_override/0:albedo_color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1.5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 0, 0, 1), Color(1, 0, 0, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_reset"]
+length = 0.1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("MeshInstance3D:surface_material_override/0:albedo_color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 0.1764706, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_p44wm"]
+_data = {
+&"Attack": SubResource("Animation_l264t"),
+&"Death": SubResource("Animation_oai4s"),
+&"RESET": SubResource("Animation_reset")
+}
+
+[node name="HordeEntity" type="Node3D" unique_id=2125746993]
+script = ExtResource("1_entity")
+base_speed = 10.0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=151091204]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+mesh = ExtResource("2_l264t")
+surface_material_override/0 = SubResource("StandardMaterial3D_oai4s")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1866995564]
+libraries/ = SubResource("AnimationLibrary_p44wm")

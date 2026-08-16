@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponCoreData" format=3]
+
+[ext_resource type="Script" path="res://systems/core/weapon_core_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Art/icons/Sprites/200%/Sword_7.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = "core_wide_cleave"
+title = "Wide Cleave Core"
+description = "Modifies Attack 1 & 2:
+Expands strike arc by +45 degrees, cleaving through wide enemy hordes."
+icon = ExtResource("2_icon")
+slot = 1
+rarity = 2
+accent_color = Color(0.2, 0.85, 0.5, 1)
+primary_damage_bonus_pct = 0.15
+primary_arc_bonus_deg = 45.0

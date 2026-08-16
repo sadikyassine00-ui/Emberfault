@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponCoreData" format=3]
+
+[ext_resource type="Script" path="res://systems/core/weapon_core_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Art/icons/Sprites/200%/Rune_9.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = "core_vampiric_edge"
+title = "Vampiric Core"
+description = "Modifies Attack 1 & 2:
+Primary hits restore 4 HP per enemy struck."
+icon = ExtResource("2_icon")
+slot = 1
+rarity = 3
+accent_color = Color(1, 0.55, 0.05, 1)
+primary_lifesteal_amount = 4.0

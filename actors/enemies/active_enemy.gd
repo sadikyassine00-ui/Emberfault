@@ -5,8 +5,8 @@ var is_active: bool = false
 var linked_idx: int = -1
 var my_target: Node3D
 
-# Fixed: Explicitly type the manager to unlock method return types for the compiler
-var horde_mgr: HordeManager = null
+# Back-reference to the manager (untyped to avoid conflicts with addon HordeManager)
+var horde_mgr = null
 
 var velocity: Vector3 = Vector3.ZERO
 var ground_clamp_query: PhysicsRayQueryParameters3D
@@ -60,7 +60,7 @@ func _on_health_depleted() -> void:
 		horde_mgr.kill_enemy(linked_idx)
 		deactivate()
 
-func activate(pos: Vector3, idx: int, target: Node3D, spd_var: float, pref_dist: float, orb_spd: float, mgr: HordeManager) -> void:
+func activate(pos: Vector3, idx: int, target: Node3D, spd_var: float, pref_dist: float, orb_spd: float, mgr) -> void:
 	global_position = pos
 	linked_idx = idx
 	my_target = target
@@ -225,7 +225,7 @@ func managed_tick(managed_delta: float) -> void:
 	var next_pos_modifier := Vector3.ZERO
 
 	for other_enemy: ActiveEnemy in horde_mgr.active_execution_pool:
-		if other_enemy == self: continue
+		if other_enemy == self or not other_enemy.is_inside_tree(): continue
 
 		# Fixed: Strict typed vectors inside the high-density separation loop
 		var other_pos: Vector3 = other_enemy.global_position
@@ -273,6 +273,8 @@ func managed_tick(managed_delta: float) -> void:
 		current_pos.y = solid_floor_height
 		velocity.y = 0.0
 
+	if not is_inside_tree():
+		return
 	global_position = current_pos
 	horde_mgr.set_enemy_pos_vel(linked_idx, global_position, velocity)
 

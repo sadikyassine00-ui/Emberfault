@@ -1,5 +1,5 @@
 extends Node3D
-class_name HordeManager
+# class_name HordeManager  # Disabled — addon/horde_system provides the canonical HordeManager
 
 # =============================================================================
 # 🏢 CORE ENGINE BINDINGS
@@ -132,6 +132,8 @@ func _ready() -> void:
 
 	if multimesh and multimesh.multimesh:
 		multimesh.multimesh.instance_count = 0
+		multimesh.multimesh.transform_format = MultiMesh.TRANSFORM_3D
+		multimesh.multimesh.use_colors = true
 		multimesh.multimesh.use_custom_data = true
 		multimesh.multimesh.instance_count = pool_size
 		for i in range(pool_size):

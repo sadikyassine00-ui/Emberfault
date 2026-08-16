@@ -49,13 +49,13 @@ enum Rarity {
 func get_slot_name() -> String:
 	match slot:
 		SlotType.SLOT_1_PRIMARY:
-			return "SLOT 1: ATTACK 1 & 2"
+			return "PRIMARY CORE"
 		SlotType.SLOT_2_FINISHER:
-			return "SLOT 2: ATTACK 3"
+			return "FINISHER CORE"
 		SlotType.SLOT_3_DASH:
-			return "SLOT 3: DASH / UTILITY"
+			return "DASH CORE"
 		_:
-			return "UNKNOWN SLOT"
+			return "CORE SLOT"
 
 func get_rarity_name() -> String:
 	match rarity:
@@ -73,12 +73,12 @@ func get_rarity_name() -> String:
 func get_rarity_color() -> Color:
 	match rarity:
 		Rarity.COMMON:
-			return Color(0.7, 0.75, 0.8, 1.0)
+			return Color(0.75, 0.8, 0.85, 1.0)
 		Rarity.RARE:
-			return Color(0.2, 0.65, 1.0, 1.0)
+			return Color(0.18, 0.68, 1.0, 1.0)
 		Rarity.EPIC:
-			return Color(0.75, 0.3, 0.95, 1.0)
+			return Color(0.72, 0.28, 0.95, 1.0)
 		Rarity.LEGENDARY:
-			return Color(1.0, 0.75, 0.15, 1.0)
+			return Color(1.0, 0.55, 0.05, 1.0)
 		_:
 			return Color.WHITE

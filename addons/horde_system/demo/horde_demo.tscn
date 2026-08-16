@@ -1,0 +1,157 @@
+[gd_scene format=3 uid="uid://dc3n65fnh546v"]
+
+[ext_resource type="Script" uid="uid://db1wqecismjw4" path="res://addons/horde_system/scripts/horde_manager.gd" id="1_mgr"]
+[ext_resource type="Script" uid="uid://bnarlt086v3cv" path="res://addons/horde_system/scripts/swarm_processor.gd" id="2_swarm"]
+[ext_resource type="Script" uid="uid://d2gd28i3tab1o" path="res://addons/horde_system/scripts/promotion_processor.gd" id="3_promo"]
+[ext_resource type="PackedScene" uid="uid://3rf6ka13addh" path="res://addons/horde_system/scenes/horde_entity.tscn" id="4_entity"]
+[ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="4_sovlc"]
+[ext_resource type="ArrayMesh" uid="uid://bccp0xp2untlt" path="res://Art/skull_mesh.tres" id="5_uqk0u"]
+[ext_resource type="Script" uid="uid://bmak1m00yv4fi" path="res://addons/horde_system/demo/demo_player.gd" id="6_player"]
+[ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="7_pch"]
+[ext_resource type="Script" uid="uid://ciry2v382r8wm" path="res://addons/horde_system/scripts/combat/enemy_type_definition.gd" id="8_bw1xo"]
+[ext_resource type="Script" uid="uid://csjccrhj5wnx7" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_3d.gd" id="8_pc3d"]
+[ext_resource type="Script" uid="uid://wtf6c15q3hex" path="res://addons/horde_system/scripts/combat/default_attack_behavior.gd" id="9_e3t43"]
+[ext_resource type="Script" uid="uid://dpv46yhm7mmhu" path="res://addons/horde_system/scripts/combat/default_damage_behavior.gd" id="10_d4ocv"]
+[ext_resource type="Script" uid="uid://cigd6om52v5e7" path="res://addons/horde_system/demo/exploding_death_behavior.gd" id="12_explode"]
+[ext_resource type="Script" uid="uid://dbkkoh5g7d8p" path="res://addons/horde_system/demo/player_combat.gd" id="13_combat"]
+[ext_resource type="PackedScene" path="res://addons/horde_system/demo/death_vfx.tscn" id="13_d4ocv"]
+
+[sub_resource type="Environment" id="Environment_demo"]
+background_mode = 1
+ambient_light_source = 2
+ambient_light_energy = 0.5
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 0.50996697, 0.36401093, 1)
+uv1_scale = Vector3(100, 100, 100)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_player"]
+albedo_color = Color(0.2, 0.5, 1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_player"]
+material = SubResource("StandardMaterial3D_player")
+radius = 0.4
+height = 1.8
+
+[sub_resource type="Resource" id="Resource_uqk0u"]
+script = ExtResource("4_sovlc")
+
+[sub_resource type="MultiMesh" id="MultiMesh_1"]
+transform_format = 1
+use_colors = true
+use_custom_data = true
+mesh = ExtResource("5_uqk0u")
+
+[sub_resource type="Resource" id="Resource_sawxl"]
+script = ExtResource("9_e3t43")
+metadata/_custom_type_script = "uid://wtf6c15q3hex"
+
+[sub_resource type="Resource" id="Resource_txlm2"]
+script = ExtResource("10_d4ocv")
+metadata/_custom_type_script = "uid://dpv46yhm7mmhu"
+
+[sub_resource type="Resource" id="Resource_j4ets"]
+script = ExtResource("12_explode")
+explosion_radius = 20.0
+explosion_damage = 100.0
+
+[sub_resource type="Resource" id="Resource_o7mrt"]
+script = ExtResource("8_bw1xo")
+damage_behavior = SubResource("Resource_txlm2")
+attack_behavior = SubResource("Resource_sawxl")
+death_behavior = SubResource("Resource_j4ets")
+metadata/_custom_type_script = "uid://ciry2v382r8wm"
+
+[node name="HordeDemo" type="Node3D" unique_id=2140914562]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1627622534]
+environment = SubResource("Environment_demo")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=184516971]
+transform = Transform3D(0.86601907, -0.3535631, 0.3535593, 0, 0.70710295, 0.7071106, -0.500011, -0.61237127, 0.61236465, 0, 20, 0)
+light_color = Color(1, 1, 0.8, 1)
+shadow_enabled = true
+shadow_opacity = 0.8
+
+[node name="Level" type="Node3D" parent="." unique_id=320636926]
+transform = Transform3D(10.843063, 0, 0, 0, 1, 0, 0, 0, 8.093219, 0, 0, 0)
+
+[node name="Floor" type="CSGBox3D" parent="Level" unique_id=416788106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+size = Vector3(200, 1, 200)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="DemoPlayer" type="CharacterBody3D" parent="." unique_id=1582364562]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+script = ExtResource("6_player")
+move_speed = 20.0
+jump_force = 20.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DemoPlayer" unique_id=758712898]
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="PlayerMesh" type="MeshInstance3D" parent="DemoPlayer" unique_id=508083060]
+mesh = SubResource("CapsuleMesh_player")
+
+[node name="PlayerCombat" type="Node3D" parent="DemoPlayer" unique_id=987654321]
+script = ExtResource("13_combat")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1110355382]
+physics_interpolation_mode = 1
+transform = Transform3D(0.7071067, -0.54167485, 0.45451918, 0, 0.6427872, 0.76604396, -0.7071067, -0.54167485, 0.45451918, 6, 11.5, 6)
+top_level = true
+fov = 55.0
+
+[node name="PhantomCameraHost" type="Node" parent="Camera3D" unique_id=1757529853]
+process_priority = 300
+process_physics_priority = 300
+script = ExtResource("7_pch")
+
+[node name="PhantomCamera3D" type="Node3D" parent="." unique_id=671677617 node_paths=PackedStringArray("follow_target")]
+transform = Transform3D(0.7071067, -0.54167485, 0.45451918, 0, 0.6427872, 0.76604396, -0.7071067, -0.54167485, 0.45451918, 6, 11.5, 6)
+top_level = true
+script = ExtResource("8_pc3d")
+follow_mode = 2
+follow_target = NodePath("../DemoPlayer")
+tween_resource = SubResource("Resource_uqk0u")
+follow_offset = Vector3(6, 10, 6)
+follow_damping = true
+follow_damping_value = Vector3(0.3, 0.3, 0.3)
+dead_zone_width = 0.4
+dead_zone_height = 0.4
+align_transform_with_view = Callable()
+align_position_with_view = Callable()
+
+[node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="." unique_id=2125285594]
+multimesh = SubResource("MultiMesh_1")
+
+[node name="HordeManager" type="Node3D" parent="." unique_id=2100562889 node_paths=PackedStringArray("player", "multimesh", "swarm_processor", "promotion_processor")]
+script = ExtResource("1_mgr")
+player = NodePath("../DemoPlayer")
+multimesh = NodePath("../MultiMeshInstance3D")
+active_entity_scene = ExtResource("4_entity")
+swarm_processor = NodePath("SwarmProcessor")
+promotion_processor = NodePath("PromotionProcessor")
+pool_size = 200
+max_alive = 100
+base_speed = 2.0
+enemy_scale = 1.5
+enemy_types = Array[ExtResource("8_bw1xo")]([SubResource("Resource_o7mrt")])
+spawn_cooldown = 0.5
+spawn_radius_min = 50.0
+spawn_radius_max = 60.0
+
+[node name="SwarmProcessor" type="Node" parent="HordeManager" unique_id=298533802]
+script = ExtResource("2_swarm")
+separation_radius = 2.0
+orbit_speed_factor = 0.5
+
+[node name="PromotionProcessor" type="Node" parent="HordeManager" unique_id=828042993]
+script = ExtResource("3_promo")

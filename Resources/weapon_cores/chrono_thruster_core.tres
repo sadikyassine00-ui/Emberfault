@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponCoreData" format=3]
+
+[ext_resource type="Script" path="res://systems/core/weapon_core_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Art/icons/Sprites/200%/Skill_1.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = "core_overclock_dash"
+title = "Chrono Thruster Core"
+description = "Modifies Dash:
++50% Dash speed and reduces dash cooldown by 30%."
+icon = ExtResource("2_icon")
+slot = 3
+rarity = 1
+accent_color = Color(0.1, 0.9, 0.9, 1)
+dash_speed_bonus_pct = 0.5
+dash_cooldown_reduction_pct = 0.3

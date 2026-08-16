@@ -4,7 +4,7 @@ extends Node3D
 signal strike_impact(position: Vector3)
 
 @export_category("References")
-@export var horde_manager: HordeManager
+@export var horde_manager: Node3D
 @export var camera_manager: CameraManager
 @export var visual_model: Node3D
 @export var visuals_container: Node3D
@@ -33,7 +33,7 @@ func _ready() -> void:
 	parent = get_parent() as CharacterBody3D
 
 	if not horde_manager:
-		horde_manager = get_tree().current_scene.find_child("HordeManager", true, false) as HordeManager
+		horde_manager = get_tree().current_scene.find_child("HordeManager", true, false)
 
 	var anim_tree = parent.get_node_or_null("Axyl/AnimationTree") as AnimationTree
 	if anim_tree:
